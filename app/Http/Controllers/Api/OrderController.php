@@ -63,6 +63,24 @@ class OrderController extends Controller
             ], 422);
         }
 
+        // Validasi ketersediaan stok produk
+        foreach ($request->items as $item) {
+            $product = Product::find($item['product_id']);
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Produk tidak ditemukan.'
+                ], 404);
+            }
+            $stock = (int) ($product->stock ?? $product->stok ?? 0);
+            if ($stock < $item['qty']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Stok untuk produk '{$product->name}' tidak mencukupi (Tersedia: {$stock})."
+                ], 422);
+            }
+        }
+
         try {
             DB::beginTransaction();
 
@@ -130,6 +148,15 @@ class OrderController extends Controller
             foreach ($orderItems as $orderItem) {
                 $orderItem['order_id'] = $order->id;
                 OrderDetail::create($orderItem);
+
+                // Kurangi stok produk
+                $product = Product::find($orderItem['product_id']);
+                if ($product) {
+                    $newStock = max(0, ((int) ($product->stock ?? 0)) - $orderItem['qty']);
+                    $product->stock = $newStock;
+                    $product->stok = $newStock;
+                    $product->save();
+                }
 
                 if ($orderItem['type'] === 'rent') {
                     $duration = (int) ($orderItem['duration'] ?? 1);

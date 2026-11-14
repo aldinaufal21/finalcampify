@@ -60,6 +60,11 @@ class SellerOrder extends Model
         return $this->belongsTo(User::class, 'seller_id');
     }
 
+    public function rental()
+    {
+        return $this->hasOne(\App\Models\SellerModels\Rental_seller::class, 'order_id', 'order_id');
+    }
+
     public function items()
     {
         return $this->hasMany(SellerOrderItem::class);

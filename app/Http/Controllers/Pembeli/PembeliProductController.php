@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Pembeli;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
@@ -54,6 +55,13 @@ class PembeliProductController extends Controller
 
         $user = Auth::user();
         $produk = Product_pembeli::findOrFail($requestData['product_id']);
+
+        // Validasi ketersediaan stok produk
+        $currentStock = (int) ($produk->stock ?? $produk->stok ?? 0);
+        if ($currentStock < 1) {
+            return back()->with('error', 'Maaf, stok produk ini sedang tidak tersedia untuk disewa.');
+        }
+
         $rentalFee = $produk->rent_price * $requestData['duration'];
         // Gunakan escrow_amount jika ada (> 0), jika 0 maka fallback ke 25% buy_price untuk produk lama
         $deposit = $produk->escrow_amount > 0 ? $produk->escrow_amount : ($produk->buy_price * 0.25);
@@ -80,53 +88,67 @@ class PembeliProductController extends Controller
             $buktiPath = 'uploads/pembayaran/' . $filename;
         }
 
-        // 1. Buat Header Order
-        $pesanan = Order_pembeli::create([
-            'user_id' => $user->id,
-            'receiver_name' => $user->name,
-            'total' => $totalPrice,
-            'shipping_address' => $user->address,
-            'shipping_city' => $user->city,
-            'shipping_district' => $user->district,
-            'shipping_postal_code' => $user->postal_code,
-            'shipping_phone' => $user->phone,
-            'metode_pembayaran' => $requestData['metode_pembayaran'],
-            'status' => 'menunggu', 
-            'kurir' => $requestData['metode_pengiriman'],
-            'bukti_pembayaran' => $buktiPath,
-        ]);
+        DB::beginTransaction();
+        try {
+            // 1. Buat Header Order
+            $pesanan = Order_pembeli::create([
+                'user_id' => $user->id,
+                'receiver_name' => $user->name,
+                'total' => $totalPrice,
+                'shipping_address' => $user->address,
+                'shipping_city' => $user->city,
+                'shipping_district' => $user->district,
+                'shipping_postal_code' => $user->postal_code,
+                'shipping_phone' => $user->phone,
+                'metode_pembayaran' => $requestData['metode_pembayaran'],
+                'status' => 'menunggu', 
+                'kurir' => $requestData['metode_pengiriman'],
+                'bukti_pembayaran' => $buktiPath,
+            ]);
 
-        // 2. Buat Detail Order
-        \App\Models\Pembeli\OrderDetail_pembeli::create([
-            'order_id' => $pesanan->id,
-            'product_id' => $produk->id,
-            'qty' => 1,
-            'harga' => $rentalFee, // Simpan harga sewa saja di detail item (breakdown)
-            'type' => 'rent',
-            'duration' => $request->duration,
-            'start_date' => $request->start_date,
-        ]);
+            // 2. Buat Detail Order
+            \App\Models\Pembeli\OrderDetail_pembeli::create([
+                'order_id' => $pesanan->id,
+                'product_id' => $produk->id,
+                'qty' => 1,
+                'harga' => $rentalFee, // Simpan harga sewa saja di detail item (breakdown)
+                'type' => 'rent',
+                'duration' => $request->duration,
+                'start_date' => $request->start_date,
+            ]);
 
-        app(\App\Services\SellerOrderService::class)->syncForOrder($pesanan->fresh(['details.product.store']));
-        
-        // 3. Buat Record Rental (untuk Seller)
-        Rental_pembeli::create([
-            'user_id' => $user->id,
-            'product_id' => $produk->id,
-            'order_id' => $pesanan->id,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'duration' => $request->duration,
-            'price' => $rentalFee, // Hanya biaya sewa
-            'status' => 'pending' // Status awal di tabel rentals
-        ]);
+            // Kurangi stok produk
+            $newStock = max(0, $currentStock - 1);
+            $produk->stock = $newStock;
+            $produk->stok = $newStock;
+            $produk->save();
 
-        // 4. Hapus dari keranjang jika ada
-        \App\Models\Pembeli\Keranjang_pembeli::where('user_id', $user->id)
-            ->where('product_id', $produk->id)
-            ->delete();
+            app(\App\Services\SellerOrderService::class)->syncForOrder($pesanan->fresh(['details.product.store']));
+            
+            // 3. Buat Record Rental (untuk Seller)
+            Rental_pembeli::create([
+                'user_id' => $user->id,
+                'product_id' => $produk->id,
+                'order_id' => $pesanan->id,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'duration' => $request->duration,
+                'price' => $rentalFee, // Hanya biaya sewa
+                'status' => 'pending' // Status awal di tabel rentals
+            ]);
 
-        return redirect()->route('orders.detail', $pesanan->id)->with('success', 'Pengajuan sewa berhasil dibuat!');
+            // 4. Hapus dari keranjang jika ada
+            \App\Models\Pembeli\Keranjang_pembeli::where('user_id', $user->id)
+                ->where('product_id', $produk->id)
+                ->delete();
+
+            DB::commit();
+
+            return redirect()->route('orders.detail', $pesanan->id)->with('success', 'Pengajuan sewa berhasil dibuat!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal memproses sewa: ' . $e->getMessage());
+        }
     }
 
     // ================= BELI =================

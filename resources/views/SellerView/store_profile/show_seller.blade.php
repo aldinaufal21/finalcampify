@@ -8,7 +8,7 @@
             <p class="text-muted">Ringkasan identitas dan performa bisnis Anda di Campify.</p>
         </div>
         <div class="col-md-4 text-md-end">
-            <a href="/seller/store-profile" class="btn btn-emerald px-4 rounded-pill shadow-sm">
+            <a href="{{ route('seller.store-profile.edit') }}" class="btn btn-emerald px-4 rounded-pill shadow-sm">
                 <i class="bi bi-pencil-square me-2"></i>Edit Profil
             </a>
         </div>
@@ -26,9 +26,13 @@
     <div class="col-lg-4">
         <div class="card card-modern border-0 overflow-hidden mb-4 shadow-lg">
             <div class="p-5 text-center" style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%);">
-                <div class="profile-avatar mx-auto mb-4 d-flex align-items-center justify-content-center text-white fw-bold rounded-circle border border-4 border-white border-opacity-10 shadow" 
+                <div class="profile-avatar mx-auto mb-4 d-flex align-items-center justify-content-center text-white fw-bold rounded-circle border border-4 border-white border-opacity-10 shadow overflow-hidden" 
                      style="width: 120px; height: 120px; background: var(--primary-emerald); font-size: 3rem;">
-                    {{ substr($profile->nama_toko ?? auth()->user()->name, 0, 1) }}
+                    @if(!empty($profile?->logo_url))
+                        <img src="{{ $profile->logo_url }}" class="w-100 h-100 object-fit-cover" alt="{{ $profile->nama_toko }}">
+                    @else
+                        {{ substr($profile->nama_toko ?? auth()->user()->name, 0, 1) }}
+                    @endif
                 </div>
                 <h4 class="fw-bold text-white mb-1">{{ $profile->nama_toko ?? 'Toko Saya' }}</h4>
                 <p class="text-white-50 small mb-0">{{ auth()->user()->email }}</p>
@@ -145,8 +149,11 @@
             <div class="col-md-4">
                 <div class="card card-modern border-0 overflow-hidden h-100">
                     <div style="height: 150px; background: #f8fafc;">
-                        @if($p->gambar && file_exists(public_path('storage/'.$p->gambar)))
-                            <img src="{{ asset('storage/'.$p->gambar) }}" class="w-100 h-100 object-fit-cover">
+                        @php
+                            $imgUrl = $p->image_url;
+                        @endphp
+                        @if($imgUrl)
+                            <img src="{{ $imgUrl }}" alt="{{ $p->nama_produk }}" class="w-100 h-100 object-fit-cover" onerror="this.onerror=null; this.src='https://placehold.co/400x300?text=Produk';">
                         @else
                             <div class="w-100 h-100 d-flex align-items-center justify-content-center opacity-25 fs-2">🏕️</div>
                         @endif

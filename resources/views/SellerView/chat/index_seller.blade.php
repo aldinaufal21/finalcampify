@@ -2,25 +2,49 @@
 use Illuminate\Support\Facades\Auth;
 use App\Models\SellerModels\Product_seller;
 use App\Models\Conversation;
+use App\Models\Message;
 
 $userId = Auth::id();
-$products = Product_seller::where('user_id', $userId)->get();
+$products = $products ?? Product_seller::where('user_id', $userId)->get();
 $selectedProductId = request('product');
-$selectedProduct = $selectedProductId ? $products->where('id', $selectedProductId)->first() : $products->first();
+$selectedProduct = $selectedProduct ?? ($selectedProductId ? $products->where('id', $selectedProductId)->first() : null);
 
-$conversations = collect();
-if ($selectedProduct) {
-    $conversations = Conversation::with(['buyer', 'latestMessage'])
-        ->where('product_id', $selectedProduct->id)
+if (!isset($conversations)) {
+    $conversationsQuery = Conversation::with(['buyer', 'product', 'latestMessage.sender'])
         ->where('seller_id', $userId)
-        ->latest()
-        ->get();
+        ->latest('updated_at');
+
+    if ($selectedProduct) {
+        $conversationsQuery->where('product_id', $selectedProduct->id);
+    }
+    $conversations = $conversationsQuery->get();
+
+    $conversations->each(function ($conv) use ($userId) {
+        $conv->unread_count = Message::where('conversation_id', $conv->id)
+            ->where('sender_id', '!=', $userId)
+            ->whereNull('read_at')
+            ->count();
+    });
 }
 
-$productChatCount = Conversation::where('seller_id', $userId)
-    ->selectRaw('product_id, count(*) as total')
-    ->groupBy('product_id')
-    ->pluck('total', 'product_id');
+if (!isset($productChatCount)) {
+    $productChatCount = Conversation::where('seller_id', $userId)
+        ->selectRaw('product_id, count(*) as total')
+        ->groupBy('product_id')
+        ->pluck('total', 'product_id');
+}
+
+if (!isset($productUnreadCount)) {
+    $productUnreadCount = Message::whereHas('conversation', function ($q) use ($userId) {
+            $q->where('seller_id', $userId);
+        })
+        ->where('sender_id', '!=', $userId)
+        ->whereNull('read_at')
+        ->join('conversations', 'messages.conversation_id', '=', 'conversations.id')
+        ->selectRaw('conversations.product_id, count(messages.id) as total')
+        ->groupBy('conversations.product_id')
+        ->pluck('total', 'conversations.product_id');
+}
 @endphp
 
 @extends('SellerView.layouts.app_seller')
@@ -39,6 +63,22 @@ $productChatCount = Conversation::where('seller_id', $userId)
                 <h6 class="fw-bold mb-4 small text-muted text-uppercase ls-1">Daftar Produk Aktif</h6>
                 
                 <div class="product-scroll-area" style="max-height: 600px; overflow-y: auto;">
+                    {{-- ALL CHATS FILTER --}}
+                    <a href="{{ route('seller.chat.index') }}" class="text-decoration-none d-block mb-3">
+                        <div class="p-3 rounded-4 transition-all {{ !$selectedProduct ? 'bg-emerald-soft border-emerald shadow-sm' : 'bg-light border-0 hover-light' }}"
+                             style="border: 1px solid transparent;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-white rounded-3 shadow-sm d-flex align-items-center justify-content-center fw-bold text-emerald" style="width: 45px; height: 45px;">
+                                    💬
+                                </div>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <h6 class="fw-bold m-0 text-dark">Semua Percakapan</h6>
+                                    <small class="text-muted">Semua Produk</small>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
                     @foreach($products as $p)
                         <a href="?product={{ $p->id }}" class="text-decoration-none d-block mb-3">
                             <div class="p-3 rounded-4 transition-all {{ $selectedProduct?->id == $p->id ? 'bg-emerald-soft border-emerald shadow-sm' : 'bg-light border-0 hover-light' }}"
@@ -51,9 +91,9 @@ $productChatCount = Conversation::where('seller_id', $userId)
                                         <h6 class="fw-bold m-0 text-dark text-truncate">{{ $p->nama_produk }}</h6>
                                         <small class="text-muted">{{ $productChatCount[$p->id] ?? 0 }} Percakapan</small>
                                     </div>
-                                    @if(($productChatCount[$p->id] ?? 0) > 0)
-                                        <span class="badge rounded-pill bg-emerald text-white px-2" style="background: var(--primary-emerald);">
-                                            {{ $productChatCount[$p->id] }}
+                                    @if(($productUnreadCount[$p->id] ?? 0) > 0)
+                                        <span class="badge rounded-pill bg-danger text-white px-2 shadow-sm" title="Pesan belum dibaca">
+                                            {{ $productUnreadCount[$p->id] }} baru
                                         </span>
                                     @endif
                                 </div>
@@ -70,15 +110,26 @@ $productChatCount = Conversation::where('seller_id', $userId)
         <div class="card card-modern border-0 h-100">
             <div class="card-header bg-white p-4 border-bottom">
                 @if($selectedProduct)
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="p-2 bg-emerald-soft rounded-3">📦</div>
-                        <div>
-                            <h6 class="fw-bold m-0">{{ $selectedProduct->nama_produk }}</h6>
-                            <small class="text-muted">Chat pelanggan untuk produk ini</small>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="p-2 bg-emerald-soft rounded-3">📦</div>
+                            <div>
+                                <h6 class="fw-bold m-0">{{ $selectedProduct->nama_produk }}</h6>
+                                <small class="text-muted">Filter percakapan untuk produk ini</small>
+                            </div>
                         </div>
+                        <a href="{{ route('seller.chat.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                            Lihat Semua Chat
+                        </a>
                     </div>
                 @else
-                    <h6 class="fw-bold m-0">Pilih Produk</h6>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 bg-emerald-soft rounded-3">💬</div>
+                        <div>
+                            <h6 class="fw-bold m-0">Semua Percakapan Pelanggan</h6>
+                            <small class="text-muted">Menampilkan seluruh pesan dari pembeli ({{ $conversations->count() }} chat)</small>
+                        </div>
+                    </div>
                 @endif
             </div>
             
@@ -95,10 +146,20 @@ $productChatCount = Conversation::where('seller_id', $userId)
                             {{-- MESSAGE CONTENT --}}
                             <div class="flex-grow-1 overflow-hidden">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <h6 class="fw-bold m-0 text-dark">{{ $conv->buyer->name ?? 'User' }}</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <h6 class="fw-bold m-0 text-dark">{{ $conv->buyer->name ?? 'User' }}</h6>
+                                        <span class="badge bg-white text-dark border rounded-pill px-2" style="font-size: 0.65rem;">
+                                            📦 {{ $conv->product?->nama_produk ?? 'Produk' }}
+                                        </span>
+                                        @if(($conv->unread_count ?? 0) > 0)
+                                            <span class="badge rounded-pill bg-danger text-white px-2" style="font-size: 0.65rem;">
+                                                {{ $conv->unread_count }} baru
+                                            </span>
+                                        @endif
+                                    </div>
                                     <small class="text-muted">{{ $conv->latestMessage?->created_at?->diffForHumans() }}</small>
                                 </div>
-                                <p class="text-muted small m-0 text-truncate">
+                                <p class="small m-0 text-truncate {{ ($conv->unread_count ?? 0) > 0 ? 'fw-bold text-dark' : 'text-muted' }}">
                                     {{ $conv->latestMessage?->message ?: 'Belum ada pesan.' }}
                                 </p>
                             </div>

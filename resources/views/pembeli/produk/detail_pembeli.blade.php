@@ -9,7 +9,9 @@
             <div class="flex items-center gap-3 text-sm text-gray-500">
                 <span>{{ $produk->category }}</span>
                 <span>•</span>
-                <span>{{ $produk->stock > 0 ? 'Tersedia' : 'Habis' }}</span>
+                <span class="{{ ($produk->stock ?? 0) > 0 ? 'text-emerald-600 font-semibold' : 'text-red-500 font-semibold' }}">
+                    {{ ($produk->stock ?? 0) > 0 ? 'Stok: ' . $produk->stock . ' unit' : 'Stok Habis' }}
+                </span>
             </div>
         </div>
 
@@ -102,22 +104,33 @@
 
                         @if($mode === 'buy')
                             <div class="bg-slate-50 rounded-3xl p-5 border border-slate-200">
-                                <h3 class="text-lg font-semibold text-slate-900 mb-4">Beli Sekarang</h3>
-                                <form action="{{ route('cart.add') }}" method="POST" class="space-y-4">
-                                    @csrf
-                                    <input type="hidden" name="product_id" value="{{ $produk->id }}">
-                                    <input type="hidden" name="type" value="buy">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-semibold text-slate-900">Beli Sekarang</h3>
+                                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ ($produk->stock ?? 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600' }}">
+                                        Sisa Stok: {{ $produk->stock ?? 0 }} unit
+                                    </span>
+                                </div>
+                                @if(($produk->stock ?? 0) > 0)
+                                    <form action="{{ route('cart.add') }}" method="POST" class="space-y-4">
+                                        @csrf
+                                        <input type="hidden" name="product_id" value="{{ $produk->id }}">
+                                        <input type="hidden" name="type" value="buy">
 
-                                    <div>
-                                        <p class="text-sm text-slate-500">Jumlah Pembelian</p>
-                                        <input type="number" name="quantity" min="1" max="{{ max(1, $produk->stock) }}" value="1" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3" />
-                                    </div>
+                                        <div>
+                                            <p class="text-sm text-slate-500 font-medium">Jumlah Pembelian</p>
+                                            <input type="number" name="quantity" min="1" max="{{ max(1, $produk->stock) }}" value="1" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3" />
+                                        </div>
 
-                                    <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-                                        <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 w-full">Tambah Keranjang</button>
-                                        <a href="{{ route('checkout.now', $produk->id) }}" class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700">Beli Sekarang</a>
+                                        <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+                                            <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 w-full">Tambah Keranjang</button>
+                                            <a href="{{ route('checkout.now', $produk->id) }}" class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700">Beli Sekarang</a>
+                                        </div>
+                                    </form>
+                                @else
+                                    <div class="p-4 bg-red-50 border border-red-100 rounded-2xl text-center">
+                                        <p class="text-sm font-bold text-red-600">Stok Barang Habis</p>
                                     </div>
-                                </form>
+                                @endif
                             </div>
 
                             @if($produk->rent_price && $produk->rent_price > 0)
@@ -128,26 +141,37 @@
                             @endif
                         @else
                             <div class="bg-slate-50 rounded-3xl p-5 border border-slate-200">
-                                <h3 class="text-lg font-semibold text-slate-900 mb-4">Sewa Sekarang</h3>
-                                <form action="{{ route('cart.add') }}" method="POST" class="space-y-4">
-                                    @csrf
-                                    <input type="hidden" name="product_id" value="{{ $produk->id }}">
-                                    <input type="hidden" name="type" value="rent">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-semibold text-slate-900">Sewa Sekarang</h3>
+                                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ ($produk->stock ?? 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600' }}">
+                                        Sisa Stok: {{ $produk->stock ?? 0 }} unit
+                                    </span>
+                                </div>
+                                @if(($produk->stock ?? 0) > 0)
+                                    <form action="{{ route('cart.add') }}" method="POST" class="space-y-4">
+                                        @csrf
+                                        <input type="hidden" name="product_id" value="{{ $produk->id }}">
+                                        <input type="hidden" name="type" value="rent">
 
-                                    <div>
-                                        <p class="text-sm text-slate-500">Tanggal Peminjaman</p>
-                                        <input type="date" name="start_date" min="{{ date('Y-m-d') }}" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3" />
-                                    </div>
-                                    <div>
-                                        <p class="text-sm text-slate-500">Durasi Sewa (hari)</p>
-                                        <input type="number" name="duration" min="1" value="1" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3" />
-                                    </div>
+                                        <div>
+                                            <p class="text-sm text-slate-500">Tanggal Peminjaman</p>
+                                            <input type="date" name="start_date" min="{{ date('Y-m-d') }}" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3" />
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-slate-500">Durasi Sewa (hari)</p>
+                                            <input type="number" name="duration" min="1" value="1" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3" />
+                                        </div>
 
-                                    <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-                                        <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 w-full">Tambah Keranjang</button>
-                                        <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">Sewa Sekarang</button>
+                                        <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+                                            <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 w-full">Tambah Keranjang</button>
+                                            <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">Sewa Sekarang</button>
+                                        </div>
+                                    </form>
+                                @else
+                                    <div class="p-4 bg-red-50 border border-red-100 rounded-2xl text-center">
+                                        <p class="text-sm font-bold text-red-600">Stok Sewa Habis</p>
                                     </div>
-                                </form>
+                                @endif
                             </div>
 
                             @if($produk->buy_price && $produk->buy_price > 0)

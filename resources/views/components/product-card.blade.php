@@ -74,8 +74,8 @@
       </h3>
     </a>
 
-    <!-- PRICE -->
-    <div class="mt-3">
+    <!-- PRICE & STOCK -->
+    <div class="mt-3 flex items-center justify-between">
       @if($isBuy)
         <div class="text-sm font-bold text-gray-800">
           Rp {{ number_format($product->buy_price) }}
@@ -85,22 +85,40 @@
           Rp {{ number_format($product->rent_price) }}/hari
         </div>
       @endif
+
+      @if(($product->stock ?? 0) > 0)
+        <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full" title="Stok barang yang dapat dibeli/disewa">
+          Stok: {{ $product->stock }}
+        </span>
+      @else
+        <span class="text-[11px] font-semibold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">
+          Habis
+        </span>
+      @endif
     </div>
 
     <!-- BUTTONS -->
     @if($isBuy)
       <div class="mt-4 flex flex-col gap-2">
-        <form action="{{ route('cart.add') }}" method="POST">
-          @csrf
-          <input type="hidden" name="product_id" value="{{ $product->id }}">
-          <input type="hidden" name="type" value="buy">
-          <input type="hidden" name="quantity" value="1">
-          <button type="submit" class="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center transition">Masukkan Keranjang</button>
-        </form>
-        <a href="{{ route('produk.detail.buy', $product->id) }}" class="w-full py-2 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 rounded-xl text-xs font-semibold flex items-center justify-center transition">Beli Sekarang</a>
+        @if(($product->stock ?? 0) > 0)
+          <form action="{{ route('cart.add') }}" method="POST">
+            @csrf
+            <input type="hidden" name="product_id" value="{{ $product->id }}">
+            <input type="hidden" name="type" value="buy">
+            <input type="hidden" name="quantity" value="1">
+            <button type="submit" class="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center transition">Masukkan Keranjang</button>
+          </form>
+          <a href="{{ route('produk.detail.buy', $product->id) }}" class="w-full py-2 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 rounded-xl text-xs font-semibold flex items-center justify-center transition">Beli Sekarang</a>
+        @else
+          <button type="button" disabled class="w-full py-2 bg-gray-100 text-gray-400 border border-gray-200 rounded-xl text-xs font-semibold flex items-center justify-center cursor-not-allowed">Stok Habis</button>
+        @endif
       </div>
     @else
-      <a href="{{ route('produk.detail.rent', $product->id) }}" class="mt-4 w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[11px] font-bold uppercase tracking-wider flex items-center justify-center transition shadow-lg shadow-emerald-50">Sewa Sekarang</a>
+      @if(($product->stock ?? 0) > 0)
+        <a href="{{ route('produk.detail.rent', $product->id) }}" class="mt-4 w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[11px] font-bold uppercase tracking-wider flex items-center justify-center transition shadow-lg shadow-emerald-50">Sewa Sekarang</a>
+      @else
+        <button type="button" disabled class="mt-4 w-full py-3 bg-gray-100 text-gray-400 border border-gray-200 rounded-2xl text-[11px] font-bold uppercase tracking-wider flex items-center justify-center cursor-not-allowed">Stok Sewa Habis</button>
+      @endif
     @endif
 
   </div>

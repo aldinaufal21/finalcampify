@@ -92,4 +92,42 @@ class User extends Authenticatable
     {
         return $this->hasMany(Conversation::class, 'seller_id');
     }
+
+    public function isOnline(int $minutes = 5): bool
+    {
+        $hasActiveSession = \Illuminate\Support\Facades\DB::table('sessions')
+            ->where('user_id', $this->id)
+            ->where('last_activity', '>=', now()->subMinutes($minutes)->getTimestamp())
+            ->exists();
+
+        if ($hasActiveSession) {
+            return true;
+        }
+
+        return \Illuminate\Support\Facades\DB::table('personal_access_tokens')
+            ->where('tokenable_id', $this->id)
+            ->where('last_used_at', '>=', now()->subMinutes($minutes))
+            ->exists();
+    }
+
+    public function getLastSeenAttribute(): ?string
+    {
+        $lastSession = \Illuminate\Support\Facades\DB::table('sessions')
+            ->where('user_id', $this->id)
+            ->orderByDesc('last_activity')
+            ->first();
+
+        $lastToken = \Illuminate\Support\Facades\DB::table('personal_access_tokens')
+            ->where('tokenable_id', $this->id)
+            ->orderByDesc('last_used_at')
+            ->first();
+
+        $sessionTime = $lastSession ? \Carbon\Carbon::createFromTimestamp($lastSession->last_activity) : null;
+        $tokenTime = $lastToken?->last_used_at ? \Carbon\Carbon::parse($lastToken->last_used_at) : null;
+        $loginTime = $this->last_login ? \Carbon\Carbon::parse($this->last_login) : null;
+
+        $latest = collect([$sessionTime, $tokenTime, $loginTime])->filter()->max();
+
+        return $latest ? $latest->diffForHumans() : null;
+    }
 }

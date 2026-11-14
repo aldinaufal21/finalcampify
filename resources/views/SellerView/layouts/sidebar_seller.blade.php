@@ -44,9 +44,16 @@
         </li>
 
         <li class="nav-item mb-2">
-            <a href="/seller/chat" class="nav-link py-3 rounded-4 d-flex align-items-center {{ request()->is('seller/chat*') ? 'active active-gradient' : 'text-dark hover-light' }}">
-                <span class="me-3 fs-5">💬</span>
-                <span class="fw-semibold">Chat Pembeli</span>
+            <a href="/seller/chat" class="nav-link py-3 rounded-4 d-flex align-items-center justify-content-between {{ request()->is('seller/chat*') ? 'active active-gradient' : 'text-dark hover-light' }}">
+                <div class="d-flex align-items-center">
+                    <span class="me-3 fs-5">💬</span>
+                    <span class="fw-semibold">Chat Pembeli</span>
+                </div>
+                @if(($sellerChatUnreadTotal ?? 0) > 0)
+                    <span class="badge rounded-pill bg-danger text-white px-2 shadow-sm" style="font-size: 0.75rem;">
+                        {{ $sellerChatUnreadTotal > 99 ? '99+' : $sellerChatUnreadTotal }}
+                    </span>
+                @endif
             </a>
         </li>
 
@@ -61,12 +68,19 @@
     <hr class="mx-3 opacity-10">
     
     <div class="profile-section p-3">
+        @php
+            $sellerStoreSidebar = \App\Models\SellerModels\StoreProfile_seller::where('user_id', auth()->id())->first();
+        @endphp
         <a href="{{ route('seller.store-profile.index') }}" class="d-flex align-items-center link-dark text-decoration-none p-3 rounded-4 {{ request()->routeIs('seller.store-profile.*') ? 'bg-emerald-soft' : 'hover-light' }}">
-            <div class="profile-avatar me-3 d-flex align-items-center justify-content-center text-white fw-bold rounded-circle" style="width: 45px; height: 45px; background: #10B981;">
-                {{ substr(auth()->user()->name, 0, 1) }}
+            <div class="profile-avatar me-3 d-flex align-items-center justify-content-center text-white fw-bold rounded-circle overflow-hidden flex-shrink-0" style="width: 45px; height: 45px; background: #10B981;">
+                @if(!empty($sellerStoreSidebar?->logo_url))
+                    <img src="{{ $sellerStoreSidebar->logo_url }}" class="w-100 h-100 object-fit-cover" alt="{{ $sellerStoreSidebar->nama_toko }}">
+                @else
+                    {{ substr(auth()->user()->name, 0, 1) }}
+                @endif
             </div>
             <div class="overflow-hidden">
-                <h6 class="mb-0 fw-bold text-truncate">{{ auth()->user()->name }}</h6>
+                <h6 class="mb-0 fw-bold text-truncate">{{ $sellerStoreSidebar->nama_toko ?? auth()->user()->name }}</h6>
                 <small class="text-muted text-truncate d-block">Store Owner</small>
             </div>
         </a>

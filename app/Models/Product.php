@@ -116,6 +116,17 @@ class Product extends Model
         $this->attributes['stok'] = $value;
     }
 
+    public function getStokAttribute()
+    {
+        return $this->attributes['stok'] ?? $this->attributes['stock'] ?? null;
+    }
+
+    public function setStokAttribute($value)
+    {
+        $this->attributes['stok'] = $value;
+        $this->attributes['stock'] = $value;
+    }
+
     public function store()
     {
         return $this->belongsTo(Store::class);

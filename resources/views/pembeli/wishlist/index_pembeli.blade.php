@@ -17,7 +17,7 @@
             @foreach($wishlists as $wishlist)
                 <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
                     <a href="{{ route('produk.detail', $wishlist->product->id) }}">
-                        <img src="{{ asset($wishlist->product->image) }}" class="w-full h-56 object-cover">
+                        <img src="{{ $wishlist->product->image_url ?? asset($wishlist->product->image) }}" class="w-full h-56 object-cover">
                     </a>
                     <div class="p-5">
                         <div class="flex items-center justify-between mb-3">
@@ -26,9 +26,14 @@
                         </div>
                         <a href="{{ route('produk.detail', $wishlist->product->id) }}" class="block font-semibold text-lg text-slate-900 mb-3">{{ $wishlist->product->name }}</a>
                         <div class="text-slate-700 mb-4">
-                            Rp {{ number_format($wishlist->product->buy_price) }}
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold">Rp {{ number_format($wishlist->product->buy_price) }}</span>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full {{ ($wishlist->product->stock ?? 0) > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600' }}">
+                                    Stok: {{ $wishlist->product->stock ?? 0 }}
+                                </span>
+                            </div>
                             @if(!empty($wishlist->product->rent_price) && $wishlist->product->rent_price > 0)
-                                <span class="block text-sm text-emerald-600">Sewa: Rp {{ number_format($wishlist->product->rent_price) }}/hari</span>
+                                <span class="block text-sm text-emerald-600 mt-1">Sewa: Rp {{ number_format($wishlist->product->rent_price) }}/hari</span>
                             @endif
                         </div>
                         <form action="{{ route('wishlist.toggle') }}" method="POST">

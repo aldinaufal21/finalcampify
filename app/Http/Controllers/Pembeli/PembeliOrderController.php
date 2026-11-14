@@ -403,10 +403,31 @@ class PembeliOrderController extends Controller
 
     public function cancel($id)
     {
-        $pesanan = Order_pembeli::where('id', $id)->where('user_id', \Illuminate\Support\Facades\Auth::id())->firstOrFail();
+        $pesanan = Order_pembeli::with(['details.product'])
+            ->where('id', $id)
+            ->where('user_id', \Illuminate\Support\Facades\Auth::id())
+            ->firstOrFail();
+
         if (in_array($pesanan->status, ['menunggu', 'diproses'])) {
             $pesanan->status = 'dibatalkan';
             $pesanan->save();
+
+            // Kembalikan stok produk ke inventaris toko
+            foreach ($pesanan->details as $detail) {
+                $product = $detail->product;
+                if ($product) {
+                    $currentStock = (int) ($product->stock ?? $product->stok ?? 0);
+                    $product->stock = $currentStock + $detail->qty;
+                    $product->stok = $product->stock;
+                    $product->save();
+                }
+            }
+
+            // Batalkan juga status rental terkait jika ada
+            \App\Models\Pembeli\Rental_pembeli::where('order_id', $pesanan->id)
+                ->where('status', '!=', 'cancelled')
+                ->update(['status' => 'cancelled']);
+
             return back()->with('success', 'Pesanan dibatalkan');
         }
         return back()->with('error', 'Pesanan tidak dapat dibatalkan');

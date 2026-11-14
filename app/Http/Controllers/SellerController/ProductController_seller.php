@@ -52,8 +52,9 @@ class ProductController_seller extends Controller
             'kategori'      => 'required|string|max:255',
             'jenis_produk'  => 'required|in:jual,sewa',
             'stok'          => 'required|integer|min:0',
+            'escrow_amount' => 'nullable|numeric|min:0',
             'deskripsi'     => 'nullable|string',
-            'gambar'         => 'required|image|mimes:jpg,jpeg,png,gif|max:2048',
+            'gambar'        => 'required|image|mimes:jpg,jpeg,png,gif|max:2048',
         ]);
 
         // Upload gambar
@@ -80,6 +81,7 @@ class ProductController_seller extends Controller
             'harga'         => $request->harga,
             'buy_price'     => $request->jenis_produk === 'jual' ? $request->harga : 0,
             'rent_price'    => $request->jenis_produk === 'sewa' ? $request->harga : 0,
+            'escrow_amount' => $request->jenis_produk === 'sewa' ? ($request->escrow_amount ?? 0) : 0,
             'category'      => $request->kategori,
             'kategori'      => $request->kategori,
             'jenis_produk'  => $request->jenis_produk, // jual / sewa
@@ -124,6 +126,7 @@ class ProductController_seller extends Controller
             'kategori'      => 'required|string|max:255',
             'jenis_produk'  => 'required|in:jual,sewa',
             'stok'          => 'required|integer|min:0',
+            'escrow_amount' => 'nullable|numeric|min:0',
             'deskripsi'     => 'nullable|string',
             'gambar'        => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
         ]);
@@ -136,6 +139,7 @@ class ProductController_seller extends Controller
             'harga'         => $request->harga,
             'buy_price'     => $request->jenis_produk === 'jual' ? $request->harga : 0,
             'rent_price'    => $request->jenis_produk === 'sewa' ? $request->harga : 0,
+            'escrow_amount' => $request->jenis_produk === 'sewa' ? ($request->escrow_amount ?? 0) : 0,
             'category'      => $request->kategori,
             'kategori'      => $request->kategori,
             'jenis_produk'  => $request->jenis_produk,

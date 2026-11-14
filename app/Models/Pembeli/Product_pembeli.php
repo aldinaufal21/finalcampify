@@ -10,7 +10,7 @@ class Product_pembeli extends Model
 {
     use HasFactory;
     protected $table = 'products';
-    protected $fillable = ['name','category','description','buy_price','rent_price','escrow_amount','rating','reviews_count','image','stock','status'];
+    protected $fillable = ['name','category','description','buy_price','rent_price','escrow_amount','rating','reviews_count','image','stock','stok','status'];
 
     protected static function booted(): void
     {
@@ -67,6 +67,18 @@ class Product_pembeli extends Model
     public function getStockAttribute()
     {
         return $this->attributes['stock'] ?? $this->attributes['stok'] ?? null;
+    }
+
+    public function setStockAttribute($value)
+    {
+        $this->attributes['stock'] = $value;
+        $this->attributes['stok'] = $value;
+    }
+
+    public function setStokAttribute($value)
+    {
+        $this->attributes['stok'] = $value;
+        $this->attributes['stock'] = $value;
     }
 
     /**

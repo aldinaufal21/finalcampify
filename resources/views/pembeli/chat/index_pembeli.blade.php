@@ -30,9 +30,16 @@
                         <a href="{{ route('chat.show', $item) }}" class="block rounded-3xl border p-4 transition {{ $active ? 'border-green-400 bg-green-50' : 'border-slate-200 bg-slate-50 hover:border-green-300' }}">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
-                                    <p class="font-semibold text-slate-900 truncate">{{ $sellerName }}</p>
+                                    <div class="flex items-center gap-2">
+                                        <p class="font-semibold text-slate-900 truncate">{{ $sellerName }}</p>
+                                        @if(($item->unread_count ?? 0) > 0)
+                                            <span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                                {{ $item->unread_count }} baru
+                                            </span>
+                                        @endif
+                                    </div>
                                     <p class="text-xs text-slate-500 truncate">{{ $item->product?->name ?? 'Produk' }}</p>
-                                    <p class="mt-2 text-xs text-slate-500 truncate">
+                                    <p class="mt-2 text-xs truncate {{ ($item->unread_count ?? 0) > 0 ? 'font-bold text-slate-800' : 'text-slate-500' }}">
                                         {{ $last ? (($last->sender_id === \Illuminate\Support\Facades\Auth::id() ? 'Kamu: ' : '') . $last->message) : 'Belum ada pesan' }}
                                     </p>
                                 </div>
@@ -54,7 +61,18 @@
                     @endphp
                     <div class="border-b px-6 py-5 flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-semibold text-slate-900">{{ $sellerName }}</p>
+                            <div class="flex items-center gap-2">
+                                <p class="text-sm font-semibold text-slate-900">{{ $sellerName }}</p>
+                                @if(isset($conversation->seller) && method_exists($conversation->seller, 'isOnline') && $conversation->seller->isOnline())
+                                    <span class="inline-flex items-center gap-1 text-[11px] text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded-full">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Online
+                                    </span>
+                                @else
+                                    <span class="text-[11px] text-slate-400">
+                                        Offline {{ (isset($conversation->seller) && $conversation->seller->last_seen) ? '• ' . $conversation->seller->last_seen : '' }}
+                                    </span>
+                                @endif
+                            </div>
                             <p class="text-xs text-slate-500">{{ $conversation->product?->name ?? 'Produk' }}</p>
                         </div>
                         @if($conversation->product)

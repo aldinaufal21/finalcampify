@@ -13,10 +13,18 @@ class ChatController extends Controller
 {
     public function index()
     {
+        $userId = Auth::id();
         $conversations = Conversation::with(['product', 'seller.store', 'latestMessage.sender'])
-            ->where('buyer_id', Auth::id())
+            ->where('buyer_id', $userId)
             ->latest('updated_at')
             ->get();
+
+        $conversations->each(function ($c) use ($userId) {
+            $c->unread_count = Message::where('conversation_id', $c->id)
+                ->where('sender_id', '!=', $userId)
+                ->whereNull('read_at')
+                ->count();
+        });
 
         return response()->json([
             'success' => true,

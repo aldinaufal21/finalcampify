@@ -55,10 +55,30 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-muted small text-uppercase ls-1">Harga (Rp)</label>
                         <input type="number" name="harga" class="form-control border-0 bg-light rounded-3 px-3 py-2 shadow-sm" value="{{ $product->harga }}" required>
+                        <small class="text-muted mt-1 d-block" style="font-size: 0.75rem;">Harga beli atau harga sewa per hari</small>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-muted small text-uppercase ls-1">Stok</label>
                         <input type="number" name="stok" class="form-control border-0 bg-light rounded-3 px-3 py-2 shadow-sm" value="{{ $product->stok }}" required>
+                        <small class="text-muted mt-1 d-block" style="font-size: 0.75rem;">Jumlah unit yang tersedia</small>
+                    </div>
+                </div>
+
+                {{-- ESCROW / JAMINAN SEWA --}}
+                <div class="row g-3 mb-4" id="escrow_row" style="{{ $product->jenis_produk === 'sewa' ? '' : 'display: none;' }}">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">
+                            <i class="bi bi-shield-check text-emerald me-1"></i> Escrow / Jaminan Sewa (Rp)
+                        </label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                            <span class="input-group-text border-0 bg-light fw-bold px-3">Rp</span>
+                            <input type="number" name="escrow_amount" id="escrow_amount" class="form-control border-0 bg-light px-3 py-2" 
+                                   value="{{ $product->escrow_amount ?? 0 }}" placeholder="0" min="0">
+                        </div>
+                        <small class="text-muted mt-2 d-block" id="escrow_recommendation" style="font-size: 0.8rem;">
+                            Nominal jaminan sewa saat ini: <strong class="text-emerald">Rp {{ number_format($product->escrow_amount ?? 0, 0, ',', '.') }}</strong>.<br>
+                            Jaminan akan dititipkan penyewa selama masa sewa dan dikembalikan saat barang kembali tanpa kerusakan.
+                        </small>
                     </div>
                 </div>
 
@@ -103,5 +123,52 @@
     .ls-1 { letter-spacing: 1px; }
     .object-fit-cover { object-fit: cover; }
     .dashed { border: 2px dashed #e2e8f0 !important; }
+    .text-emerald { color: #10B981; }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const jenisProdukSelect = document.querySelector('select[name="jenis_produk"]');
+    const escrowRow = document.getElementById('escrow_row');
+    const hargaInput = document.querySelector('input[name="harga"]');
+    const escrowInput = document.getElementById('escrow_amount');
+    const escrowRecommendation = document.getElementById('escrow_recommendation');
+
+    let userEditedEscrow = {{ ($product->escrow_amount ?? 0) > 0 ? 'true' : 'false' }};
+    if (escrowInput) {
+        escrowInput.addEventListener('input', () => { userEditedEscrow = true; });
+    }
+
+    function updateEscrowVisibility() {
+        if (!escrowRow) return;
+        if (jenisProdukSelect && jenisProdukSelect.value === 'sewa') {
+            escrowRow.style.display = 'flex';
+            updateEscrowRecommendation();
+        } else {
+            escrowRow.style.display = 'none';
+        }
+    }
+
+    function updateEscrowRecommendation() {
+        if (!escrowRecommendation || !hargaInput) return;
+        const harga = parseFloat(hargaInput.value) || 0;
+        const rekomendasi = Math.round(harga * 0.25);
+        
+        escrowRecommendation.innerHTML = `Rekomendasi jaminan (25% dari estimasi nilai sewa): <strong class="text-emerald">Rp ${rekomendasi.toLocaleString('id-ID')}</strong>.<br>Anda bebas menentukan nominal ini. Jaminan akan dikembalikan ke penyewa jika barang kembali tanpa kerusakan.`;
+        
+        if (!userEditedEscrow && harga > 0 && parseFloat(escrowInput.value || 0) === 0) {
+            escrowInput.value = rekomendasi;
+        }
+    }
+
+    if (jenisProdukSelect) {
+        jenisProdukSelect.addEventListener('change', updateEscrowVisibility);
+    }
+    if (hargaInput) {
+        hargaInput.addEventListener('input', updateEscrowRecommendation);
+    }
+    
+    updateEscrowVisibility();
+});
+</script>
 @endsection

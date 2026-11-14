@@ -9,7 +9,9 @@
             <div class="flex items-center gap-3 text-sm text-gray-500">
                 <span>{{ $produk->category }}</span>
                 <span>•</span>
-                <span>{{ $produk->stock > 0 ? 'Tersedia' : 'Habis' }}</span>
+                <span class="{{ ($produk->stock ?? 0) > 0 ? 'text-emerald-600 font-semibold' : 'text-red-500 font-semibold' }}">
+                    {{ ($produk->stock ?? 0) > 0 ? 'Stok Sewa Tersedia: ' . $produk->stock . ' unit' : 'Stok Sewa Habis' }}
+                </span>
             </div>
         </div>
 
@@ -175,11 +177,24 @@
 
                     <div class="space-y-6">
                         <div class="bg-slate-50 rounded-3xl p-5 border border-slate-200">
-                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Sewa Sekarang</h3>
-                            <form action="{{ route('sewa.form', $produk->id) }}" method="GET" class="space-y-4">
-                                <p class="text-sm text-slate-500 mb-3 leading-relaxed">Klik tombol di bawah untuk mengisi formulir penyewaan. <strong>Catatan:</strong> Anda wajib mengunggah foto KTP untuk keamanan transaksi.</p>
-                                <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-4 text-base font-bold text-white hover:bg-emerald-700 w-full shadow-lg shadow-emerald-100 transition-all">Lanjutkan ke Formulir Sewa</button>
-                            </form>
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-semibold text-slate-900">Sewa Sekarang</h3>
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ ($produk->stock ?? 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600' }}">
+                                    Sisa Stok: {{ $produk->stock ?? 0 }} unit
+                                </span>
+                            </div>
+
+                            @if(($produk->stock ?? 0) > 0)
+                                <form action="{{ route('sewa.form', $produk->id) }}" method="GET" class="space-y-4">
+                                    <p class="text-sm text-slate-500 mb-3 leading-relaxed">Klik tombol di bawah untuk mengisi formulir penyewaan. <strong>Catatan:</strong> Anda wajib mengunggah foto KTP untuk keamanan transaksi.</p>
+                                    <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-4 text-base font-bold text-white hover:bg-emerald-700 w-full shadow-lg shadow-emerald-100 transition-all">Lanjutkan ke Formulir Sewa</button>
+                                </form>
+                            @else
+                                <div class="p-4 bg-red-50 border border-red-100 rounded-2xl text-center">
+                                    <p class="text-sm font-bold text-red-600 mb-1">Maaf, Stok Sewa Sedang Habis</p>
+                                    <p class="text-xs text-red-500">Barang ini sedang disewa seluruhnya atau belum tersedia kembali.</p>
+                                </div>
+                            @endif
                         </div>
                     </div>
 

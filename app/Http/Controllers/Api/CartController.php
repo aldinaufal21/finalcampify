@@ -46,6 +46,10 @@ class CartController extends Controller
             if ($rentPrice <= 0) {
                 return response()->json(['message' => 'Produk ini tidak tersedia untuk sewa'], 422);
             }
+            $stock = $product->stock ?? $product->stok ?? 0;
+            if ($stock < 1) {
+                return response()->json(['message' => 'Stok produk tidak mencukupi untuk disewa'], 422);
+            }
         }
 
         $cart = Keranjang_pembeli::create([
@@ -72,7 +76,7 @@ class CartController extends Controller
             $qty = max(1, $request->quantity);
             $product = $cart->product;
             $stock = $product->stock ?? $product->stok ?? 0;
-            if ($cart->type === 'buy' && $qty > $stock) {
+            if ($qty > $stock) {
                 return response()->json(['message' => 'Stok tidak mencukupi'], 422);
             }
             $cart->update(['qty' => $qty]);

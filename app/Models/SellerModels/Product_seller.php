@@ -87,6 +87,17 @@ class Product_seller extends Model
         $this->attributes['stock'] = $value;
     }
 
+    public function getStockAttribute()
+    {
+        return $this->attributes['stock'] ?? $this->attributes['stok'] ?? 0;
+    }
+
+    public function setStockAttribute($value)
+    {
+        $this->attributes['stock'] = $value;
+        $this->attributes['stok'] = $value;
+    }
+
     public function ratings()
     {
         return $this->hasMany(ProductRating_seller::class, 'product_id');

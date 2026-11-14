@@ -295,7 +295,7 @@
             <div class="d-flex align-items-center gap-4 mb-4 p-4 bg-light rounded-4 border-0">
                 <div class="rounded-3 overflow-hidden shadow-sm" style="width: 100px; height: 100px;">
                     @if($detail->product->image)
-                        <img src="{{ asset($detail->product->image) }}" class="w-100 h-100 object-fit-cover">
+                        <img src="{{ $detail->product->image_url ?? asset($detail->product->image) }}" class="w-100 h-100 object-fit-cover">
                     @else
                         <div class="w-100 h-100 bg-white d-flex align-items-center justify-content-center">📦</div>
                     @endif

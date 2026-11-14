@@ -14,7 +14,11 @@
                 <h4 class="fw-bold mb-0 text-dark">{{ $chatPartner->name ?? 'Chat' }}</h4>
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-emerald-soft text-emerald rounded-pill px-2" style="font-size: 0.7rem;">Produk: {{ $conversation?->product?->nama_produk ?? 'Umum' }}</span>
-                    <span class="text-success small"><i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> Online</span>
+                    @if(isset($chatPartner) && method_exists($chatPartner, 'isOnline') && $chatPartner->isOnline())
+                        <span class="text-success small"><i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> Online</span>
+                    @else
+                        <span class="text-muted small"><i class="bi bi-circle text-secondary" style="font-size: 0.5rem;"></i> Offline {{ (isset($chatPartner) && $chatPartner->last_seen) ? '• ' . $chatPartner->last_seen : '' }}</span>
+                    @endif
                 </div>
             </div>
         </div>

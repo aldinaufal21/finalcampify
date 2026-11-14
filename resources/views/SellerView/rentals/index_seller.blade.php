@@ -81,7 +81,7 @@
                 <div class="col-md-8">
                     <div class="d-flex align-items-center gap-4 p-3 bg-light rounded-4 h-100">
                         @if($rental->product->image)
-                            <img src="{{ asset($rental->product->image) }}" class="rounded-3 shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
+                            <img src="{{ $rental->product->image_url ?? asset($rental->product->image) }}" class="rounded-3 shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
                         @else
                             <div class="bg-white rounded-3 d-flex align-items-center justify-content-center border" style="width: 100px; height: 100px;">🏕️</div>
                         @endif

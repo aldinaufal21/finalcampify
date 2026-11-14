@@ -11,16 +11,46 @@ use Illuminate\Http\Request;
 
 class ChatController_seller extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $userId = \Illuminate\Support\Facades\Auth::id();
+        $products = \App\Models\SellerModels\Product_seller::where('user_id', $userId)->get();
+        $selectedProductId = $request->query('product');
+        $selectedProduct = $selectedProductId ? $products->where('id', $selectedProductId)->first() : null;
 
-        $conversations = Conversation::with(['buyer', 'product', 'latestMessage.sender'])
+        $conversationsQuery = Conversation::with(['buyer', 'product', 'latestMessage.sender'])
             ->where('seller_id', $userId)
-            ->latest('updated_at')
-            ->get();
+            ->latest('updated_at');
 
-        return view('SellerView.chat.index_seller', compact('conversations'));
+        if ($selectedProduct) {
+            $conversationsQuery->where('product_id', $selectedProduct->id);
+        }
+
+        $conversations = $conversationsQuery->get();
+
+        $conversations->each(function ($conv) use ($userId) {
+            $conv->unread_count = Message::where('conversation_id', $conv->id)
+                ->where('sender_id', '!=', $userId)
+                ->whereNull('read_at')
+                ->count();
+        });
+
+        $productChatCount = Conversation::where('seller_id', $userId)
+            ->selectRaw('product_id, count(*) as total')
+            ->groupBy('product_id')
+            ->pluck('total', 'product_id');
+
+        $productUnreadCount = Message::whereHas('conversation', function ($q) use ($userId) {
+                $q->where('seller_id', $userId);
+            })
+            ->where('sender_id', '!=', $userId)
+            ->whereNull('read_at')
+            ->join('conversations', 'messages.conversation_id', '=', 'conversations.id')
+            ->selectRaw('conversations.product_id, count(messages.id) as total')
+            ->groupBy('conversations.product_id')
+            ->pluck('total', 'conversations.product_id');
+
+        return view('SellerView.chat.index_seller', compact('products', 'selectedProduct', 'conversations', 'productChatCount', 'productUnreadCount'));
     }
 
     public function show(Conversation $conversation)

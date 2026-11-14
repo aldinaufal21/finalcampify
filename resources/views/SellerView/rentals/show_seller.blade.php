@@ -94,7 +94,7 @@
                 <div class="col-md-4">
                     <div class="rounded-4 overflow-hidden border shadow-sm" style="height: 200px;">
                         @if($rental->product->image)
-                            <img src="{{ asset($rental->product->image) }}" class="w-100 h-100 object-fit-cover">
+                            <img src="{{ $rental->product->image_url ?? asset($rental->product->image) }}" class="w-100 h-100 object-fit-cover">
                         @else
                             <div class="w-100 h-100 bg-light d-flex align-items-center justify-content-center opacity-25 fs-1">🏕️</div>
                         @endif

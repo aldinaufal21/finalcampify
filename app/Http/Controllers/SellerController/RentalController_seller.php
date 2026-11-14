@@ -89,7 +89,19 @@ class RentalController_seller extends Controller
             $data['condition_photo_handover'] = 'assets/images/' . $filename;
         }
 
+        $oldStatus = $rental->status;
         $rental->update($data);
+
+        // Jika rental dibatalkan, kembalikan stok produk
+        if ($oldStatus !== 'cancelled' && $request->status === 'cancelled') {
+            $product = $rental->product;
+            if ($product) {
+                $currentStock = (int) ($product->stock ?? $product->stok ?? 0);
+                $product->stock = $currentStock + 1;
+                $product->stok = $product->stock;
+                $product->save();
+            }
+        }
 
         if ($rental->order) {
             $statusMap = [
@@ -144,6 +156,18 @@ class RentalController_seller extends Controller
         if (class_exists(\App\Services\ReturnSettlementService::class)) {
             $settlement = app(\App\Services\ReturnSettlementService::class);
             $settlement->applyAutoCalculations($returnRequest);
+        }
+
+        // Kembalikan stok produk jika barang fisik kembali diterima
+        $alreadyReceived = in_array($rental->status, ['denda_pending', 'waiting_refund', 'completed'], true);
+        if (!$alreadyReceived) {
+            $product = $rental->product;
+            if ($product) {
+                $currentStock = (int) ($product->stock ?? $product->stok ?? 0);
+                $product->stock = $currentStock + 1;
+                $product->stok = $product->stock;
+                $product->save();
+            }
         }
 
         // Tentukan status akhir berdasarkan nilai defisit

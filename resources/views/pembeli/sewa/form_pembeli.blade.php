@@ -9,9 +9,14 @@
         <div class="bg-white rounded-3xl shadow-lg p-8">
             <div class="flex items-center gap-4 mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <img src="{{ $produk->image_url }}" class="w-16 h-16 object-cover rounded-xl shadow-sm">
-                <div>
+                <div class="flex-1">
                     <h2 class="text-xl font-bold text-slate-800">{{ $produk->name }}</h2>
-                    <p class="text-xs text-slate-500">Harga: Rp {{ number_format($produk->rent_price) }}/hari</p>
+                    <div class="flex items-center justify-between mt-1">
+                        <p class="text-xs text-slate-500">Harga: Rp {{ number_format($produk->rent_price) }}/hari</p>
+                        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full {{ ($produk->stock ?? 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600' }}">
+                            Sisa Stok: {{ $produk->stock ?? 0 }} unit
+                        </span>
+                    </div>
                 </div>
             </div>
             <h2 class="text-2xl font-bold mb-6">Formulir Penyewaan</h2>

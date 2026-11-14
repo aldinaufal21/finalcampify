@@ -79,7 +79,10 @@
                                 <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
                                     <!-- Controls -->
                                     <div class="flex flex-col gap-2">
-                                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Kuantitas</p>
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Kuantitas</p>
+                                            <span class="text-[10px] font-medium {{ ($item->product?->stock ?? 0) > 0 ? 'text-emerald-600' : 'text-rose-500' }}">(Stok: {{ $item->product?->stock ?? 0 }})</span>
+                                        </div>
                                         <div class="flex items-center bg-gray-100 rounded-xl p-1 border border-gray-200 w-fit">
                                             @if($item->type === 'buy')
                                                 <button type="button" onclick="updateQty({{ $item->id }}, {{ $item->qty - 1 }})" class="h-10 w-10 flex items-center justify-center rounded bg-white hover:bg-green-600 hover:text-white transition-all text-slate-600 font-bold">-</button>

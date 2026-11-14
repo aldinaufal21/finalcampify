@@ -221,10 +221,22 @@ class ReturnEscrowController extends Controller
         // Update rental & order status
         $rental = \App\Models\SellerModels\Rental_seller::where('order_id', $returnEscrow->order_id)->first();
         if ($rental) {
+            $prevStatus = $rental->status;
             $rentalStatus = $data['final_status'];
             $rental->update(['status' => $rentalStatus]);
             if ($rental->order) {
                 $rental->order->update(['status' => $data['final_status'] === 'completed' ? 'selesai' : 'dibatalkan']);
+            }
+
+            // Kembalikan stok jika belum dikembalikan saat receiveItem
+            if ($data['final_status'] === ReturnEscrow::STATUS_COMPLETED && !in_array($prevStatus, ['denda_pending', 'waiting_refund', 'completed'], true)) {
+                $p = $rental->product;
+                if ($p) {
+                    $cur = (int) ($p->stock ?? $p->stok ?? 0);
+                    $p->stock = $cur + 1;
+                    $p->stok = $p->stock;
+                    $p->save();
+                }
             }
         }
 

@@ -15,7 +15,7 @@ class OrderController_seller extends Controller
 
     public function index(Request $request)
     {
-        $query = $this->sellerOrders();
+        $query = $this->sellerOrders()->whereDoesntHave('items', fn ($query) => $query->where('type', 'rent'));
 
         if ($request->filled('status')) {
             $query->where('status', $this->sellerOrderService->mapOrderStatus($request->status));
@@ -26,6 +26,7 @@ class OrderController_seller extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'like', '%' . $search . '%')
                   ->orWhere('seller_order_number', 'like', '%' . $search . '%')
+                  ->orWhere('order_id', 'like', '%' . $search . '%')
                   ->orWhereHas('order', function ($oq) use ($search) {
                       $oq->where('order_number', 'like', '%' . $search . '%')
                           ->orWhere('receiver_name', 'like', '%' . $search . '%');
@@ -45,19 +46,47 @@ class OrderController_seller extends Controller
 
     public function show($id)
     {
-        $order = $this->sellerOrders()->findOrFail($id);
+        $order = $this->sellerOrders()
+            ->where(function ($q) use ($id) {
+                $q->where('id', $id)
+                  ->orWhere('order_id', $id)
+                  ->orWhere('seller_order_number', $id);
+            })
+            ->firstOrFail();
+
+        // Jika pesanan ini adalah rental dan memiliki data rental, redirect ke detail rental
+        if ($order->items->contains('type', 'rent')) {
+            $rental = \App\Models\SellerModels\Rental_seller::where('order_id', $order->order_id)->first();
+            if ($rental) {
+                return redirect()->route('seller.rentals.show', $rental->id);
+            }
+        }
+
         return view('SellerView.orders.show_seller', compact('order'));
     }
 
     public function edit($id)
     {
-        $order = $this->sellerOrders()->findOrFail($id);
+        $order = $this->sellerOrders()
+            ->where(function ($q) use ($id) {
+                $q->where('id', $id)
+                  ->orWhere('order_id', $id)
+                  ->orWhere('seller_order_number', $id);
+            })
+            ->firstOrFail();
+
         return view('SellerView.orders.edit_seller', compact('order'));
     }
 
     public function update(Request $request, $id)
     {
-        $order = $this->sellerOrders()->findOrFail($id);
+        $order = $this->sellerOrders()
+            ->where(function ($q) use ($id) {
+                $q->where('id', $id)
+                  ->orWhere('order_id', $id)
+                  ->orWhere('seller_order_number', $id);
+            })
+            ->firstOrFail();
 
         // Map English status to Indonesian database values if necessary
         $statusMap = [
@@ -101,7 +130,22 @@ class OrderController_seller extends Controller
              return back()->with('error', 'Video bukti pengiriman wajib diunggah saat mengubah status menjadi Dikirim.');
         }
 
+        $prevStatus = $order->status;
         $order->update($updateData);
+
+        // Jika dibatalkan, pulihkan stok produk
+        if ($prevStatus !== SellerOrder::STATUS_CANCELLED && $status === SellerOrder::STATUS_CANCELLED) {
+            foreach ($order->items as $item) {
+                $product = $item->product;
+                if ($product) {
+                    $cur = (int) ($product->stock ?? $product->stok ?? 0);
+                    $product->stock = $cur + $item->qty;
+                    $product->stok = $product->stock;
+                    $product->save();
+                }
+            }
+        }
+
         app(\App\Services\SellerOrderService::class)->syncPayout($order->fresh(['payout']));
         $this->sellerOrderService->syncParentOrderStatus($order->order);
 
@@ -115,12 +159,26 @@ class OrderController_seller extends Controller
         ]);
 
         $order = $this->sellerOrders()->findOrFail($order);
+        $prevStatus = $order->status;
         $status = $this->sellerOrderService->mapOrderStatus($request->status);
         $order->update([
             'status' => $status,
             'shipped_at' => $status === SellerOrder::STATUS_SHIPPED ? ($order->shipped_at ?? now()) : $order->shipped_at,
             'delivered_at' => $status === SellerOrder::STATUS_DELIVERED ? ($order->delivered_at ?? now()) : $order->delivered_at,
         ]);
+
+        // Jika dibatalkan, pulihkan stok produk
+        if ($prevStatus !== SellerOrder::STATUS_CANCELLED && $status === SellerOrder::STATUS_CANCELLED) {
+            foreach ($order->items as $item) {
+                $product = $item->product;
+                if ($product) {
+                    $cur = (int) ($product->stock ?? $product->stok ?? 0);
+                    $product->stock = $cur + $item->qty;
+                    $product->stok = $product->stock;
+                    $product->save();
+                }
+            }
+        }
         $this->sellerOrderService->syncPayout($order->fresh(['payout']));
         $this->sellerOrderService->syncParentOrderStatus($order->order);
 
@@ -163,12 +221,7 @@ class OrderController_seller extends Controller
     {
         $userId = \Illuminate\Support\Facades\Auth::id();
 
-        return SellerOrder::with(['items' => function ($query) {
-                $query->where('type', 'buy')
-                    ->with('product');
-            }, 'order.buyer', 'store.user', 'seller', 'payout'])
-            ->whereHas('items', fn ($query) => $query->where('type', 'buy'))
-            ->whereDoesntHave('items', fn ($query) => $query->where('type', 'rent'))
+        return SellerOrder::with(['items.product', 'order.buyer', 'store.user', 'seller', 'payout'])
             ->where(function ($query) use ($userId) {
                 $query->where('seller_id', $userId)
                     ->orWhereHas('store', fn ($store) => $store->where('user_id', $userId));

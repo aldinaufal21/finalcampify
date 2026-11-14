@@ -63,6 +63,13 @@
                                 Rp {{ number_format($product->rent_price,0,',','.') }}/hari
                             </span>
                         </div>
+
+                        <div class="flex justify-between mt-2 pt-2 border-t border-slate-100 text-xs">
+                            <span class="text-slate-500">Sisa Stok</span>
+                            <span class="font-semibold {{ ($product->stock ?? 0) > 0 ? 'text-emerald-600' : 'text-red-500' }}">
+                                {{ ($product->stock ?? 0) > 0 ? $product->stock . ' unit' : 'Habis' }}
+                            </span>
+                        </div>
                     </div>
 
                     <a href="/product/{{ $product->id }}" 

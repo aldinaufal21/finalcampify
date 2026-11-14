@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\PayoutController;
 use App\Http\Controllers\Admin\ReturnEscrowController;
 use App\Http\Controllers\Admin\SettingsController;
 
+use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\Pembeli\PembeliHomeController;
 use App\Http\Controllers\Pembeli\PembeliProductController;
 use App\Http\Controllers\Pembeli\PembeliCategoryController;
@@ -47,9 +48,7 @@ use App\Http\Controllers\SellerController\ReportController_seller;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function () {
-    return redirect('/login');
-});
+Route::get('/', [LandingPageController::class, 'index'])->name('landing');
 
 // 🔥 AUTHENTICATION ROUTES (UNIFIED)
 Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])->name('login');
@@ -248,6 +247,7 @@ Route::middleware(['auth', 'role:seller'])->prefix('seller')->name('seller.')->g
     // Store Profile
     Route::get('/store-profile', [StoreProfileController_seller::class, 'index'])->name('store-profile.index');
     Route::get('/store-profile/show', [StoreProfileController_seller::class, 'show'])->name('store-profile.show');
+    Route::get('/store-profile/edit', [StoreProfileController_seller::class, 'edit'])->name('store-profile.edit');
     Route::post('/store-profile', [StoreProfileController_seller::class, 'update'])->name('store-profile.update');
     Route::post('/store-profile/klarifikasi', [StoreProfileController_seller::class, 'submitKlarifikasi'])->name('store-profile.klarifikasi');
 

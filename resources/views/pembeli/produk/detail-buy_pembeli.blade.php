@@ -9,7 +9,9 @@
             <div class="flex items-center gap-3 text-sm text-gray-500">
                 <span>{{ $produk->category }}</span>
                 <span>•</span>
-                <span>{{ $produk->stock > 0 ? 'Tersedia' : 'Habis' }}</span>
+                <span class="{{ ($produk->stock ?? 0) > 0 ? 'text-emerald-600 font-semibold' : 'text-red-500 font-semibold' }}">
+                    {{ ($produk->stock ?? 0) > 0 ? 'Stok Tersedia: ' . $produk->stock . ' unit' : 'Stok Habis' }}
+                </span>
             </div>
         </div>
 
@@ -166,26 +168,39 @@
 
                     <div class="space-y-6">
                         <div class="bg-slate-50 rounded-3xl p-5 border border-slate-200">
-                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Beli Sekarang</h3>
-                            <form action="{{ route('cart.add') }}" method="POST" class="space-y-4">
-                                @csrf
-                                <input type="hidden" name="product_id" value="{{ $produk->id }}">
-                                <input type="hidden" name="type" value="buy">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-slate-900">Beli Sekarang</h3>
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ ($produk->stock ?? 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600' }}">
+                                    Sisa Stok: {{ $produk->stock ?? 0 }} unit
+                                </span>
+                            </div>
 
-                                <div>
-                                    <p class="text-sm text-slate-500 font-medium">Jumlah Pembelian</p>
-                                    <input type="number" name="quantity" min="1" max="{{ max(1, $produk->stock) }}" value="1" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 focus:ring-2 focus:ring-emerald-500" />
-                                </div>
+                            @if(($produk->stock ?? 0) > 0)
+                                <form action="{{ route('cart.add') }}" method="POST" class="space-y-4">
+                                    @csrf
+                                    <input type="hidden" name="product_id" value="{{ $produk->id }}">
+                                    <input type="hidden" name="type" value="buy">
 
-                                <div class="grid gap-3 sm:grid-cols-2">
-                                    <button type="submit" name="redirect" value="cart" class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-4 text-sm font-bold text-white hover:bg-slate-800 transition-all">
-                                        Tambah Keranjang
-                                    </button>
-                                    <button type="submit" name="redirect" value="checkout" class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-bold text-white hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100">
-                                        Beli Sekarang
-                                    </button>
+                                    <div>
+                                        <p class="text-sm text-slate-500 font-medium">Jumlah Pembelian</p>
+                                        <input type="number" name="quantity" min="1" max="{{ max(1, $produk->stock) }}" value="1" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 focus:ring-2 focus:ring-emerald-500" />
+                                    </div>
+
+                                    <div class="grid gap-3 sm:grid-cols-2">
+                                        <button type="submit" name="redirect" value="cart" class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-4 text-sm font-bold text-white hover:bg-slate-800 transition-all">
+                                            Tambah Keranjang
+                                        </button>
+                                        <button type="submit" name="redirect" value="checkout" class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-bold text-white hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100">
+                                            Beli Sekarang
+                                        </button>
+                                    </div>
+                                </form>
+                            @else
+                                <div class="p-4 bg-red-50 border border-red-100 rounded-2xl text-center">
+                                    <p class="text-sm font-bold text-red-600 mb-1">Maaf, Stok Barang Habis</p>
+                                    <p class="text-xs text-red-500">Produk ini saat ini tidak memiliki stok yang tersedia untuk dibeli.</p>
                                 </div>
-                            </form>
+                            @endif
                         </div>
                     </div>
 

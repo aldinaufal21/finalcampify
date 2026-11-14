@@ -835,7 +835,7 @@
                                             
                                             @if($report->product)
                                                 <div class="mt-3 flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 w-fit">
-                                                    <img src="{{ asset($report->product->image) }}" class="w-8 h-8 rounded-lg object-cover">
+                                                    <img src="{{ $report->product->image_url ?? asset($report->product->image) }}" class="w-8 h-8 rounded-lg object-cover">
                                                     <span class="text-xs font-medium text-slate-700">{{ $report->product->name }}</span>
                                                 </div>
                                             @elseif($report->store)

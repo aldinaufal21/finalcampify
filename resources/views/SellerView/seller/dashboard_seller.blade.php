@@ -350,20 +350,46 @@
         <table class="table table-hover align-middle custom-table">
             <thead class="bg-light bg-opacity-50">
                 <tr>
-                    <th class="border-0 px-4 py-3 text-muted small fw-bold text-uppercase ls-1">Order ID</th>
+                    <th class="border-0 px-4 py-3 text-muted small fw-bold text-uppercase ls-1">No. Transaksi</th>
                     <th class="border-0 px-4 py-3 text-muted small fw-bold text-uppercase ls-1">Item</th>
                     <th class="border-0 px-4 py-3 text-muted small fw-bold text-uppercase ls-1">Buyer</th>
                     <th class="border-0 px-4 py-3 text-muted small fw-bold text-uppercase ls-1 text-center">Status</th>
+                    <th class="border-0 px-4 py-3 text-muted small fw-bold text-uppercase ls-1 text-end">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($orders->take(5) as $o)
-                <tr style="cursor: pointer;" onclick="window.location='/seller/orders/{{ $o->id }}'">
-                    <td class="px-4 py-4 fw-bold text-dark">{{ $o->seller_order_number ?? '#'.$o->id }}</td>
+                @php
+                    $firstDetail = $o->details->first();
+                    $isRental = optional($firstDetail)->type === 'rent';
+                    $rental = $isRental ? ($o->rental ?? \App\Models\SellerModels\Rental_seller::where('order_id', $o->order_id)->first()) : null;
+                    $targetUrl = $isRental && $rental 
+                        ? route('seller.rentals.show', $rental->id) 
+                        : route('seller.orders.show', $o->id);
+                    $displayTransactionId = $isRental 
+                        ? 'Sewa #' . ($rental ? $rental->id : ($o->order_id ?: $o->id))
+                        : 'Pesanan #' . ($o->order_id ?: $o->id);
+                @endphp
+                <tr style="cursor: pointer;" onclick="window.location='{{ $targetUrl }}'">
+                    <td class="px-4 py-4">
+                        <div class="d-flex flex-column align-items-start">
+                            <span class="fw-bold text-dark">{{ $displayTransactionId }}</span>
+                            <div class="mt-1">
+                                @if($isRental)
+                                    <span class="badge bg-emerald-soft text-emerald px-2 py-1 rounded-pill fw-bold" style="font-size: 0.65rem;">
+                                        🏕️ SEWA
+                                    </span>
+                                @else
+                                    <span class="badge bg-light text-secondary border px-2 py-1 rounded-pill fw-bold" style="font-size: 0.65rem;">
+                                        📦 BELI
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </td>
                     <td class="px-4 py-4">
                         <div class="d-flex align-items-center gap-3">
                             @php
-                                $firstDetail = $o->details->first();
                                 $p = $firstDetail ? $firstDetail->product : null;
                                 $imgPath = $p ? ($p->image ?? $p->gambar) : null;
                                 if ($imgPath && !str_starts_with($imgPath, 'assets/images/') && !str_starts_with($imgPath, 'storage/') && !str_starts_with($imgPath, 'http')) {
@@ -393,10 +419,10 @@
                     <td class="px-4 py-4 text-dark small fw-semibold">{{ $o->buyer->name ?? $o->buyer_name }}</td>
                     <td class="px-4 py-4 text-center">
                         @php
-                            $isRental = optional($o->details->first())->type === 'rent';
-                            $displayStatus = $isRental && $o->rental ? $o->rental->status : $o->status;
+                            $rawStatus = $isRental && $rental ? $rental->status : $o->status;
+                            $displayStatus = $isRental && $rental ? ($rental->status_label ?? ucfirst($rental->status)) : ($o->status_label ?? ucfirst($rawStatus));
                             
-                            $statusLabelClass = match($displayStatus) {
+                            $statusLabelClass = match(strtolower($rawStatus ?? '')) {
                                 'delivered', 'selesai', 'completed', 'active', 'aktif' => 'bg-emerald-soft text-emerald',
                                 'diproses', 'processing', 'pending' => 'bg-info-subtle text-info',
                                 'menunggu' => 'bg-warning-subtle text-warning',
@@ -406,8 +432,13 @@
                             };
                         @endphp
                         <span class="badge rounded-pill px-3 py-2 fw-bold text-uppercase ls-1 {{ $statusLabelClass }}" style="font-size: 0.65rem;">
-                            {{ $o->status_label ?? $displayStatus }}
+                            {{ $displayStatus }}
                         </span>
+                    </td>
+                    <td class="px-4 py-4 text-end" onclick="event.stopPropagation();">
+                        <a href="{{ $targetUrl }}" class="btn btn-sm btn-light border rounded-pill px-3 fw-semibold text-secondary">
+                            Detail <i class="bi bi-chevron-right ms-1"></i>
+                        </a>
                     </td>
                 </tr>
                 @empty

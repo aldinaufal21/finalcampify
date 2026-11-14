@@ -2,19 +2,52 @@
 
 @section('content')
 <div class="dashboard-header mb-5">
-    <h2 class="fw-bold m-0 text-dark">Profil Toko</h2>
-    <p class="text-muted">Kelola identitas dan informasi rekening toko Anda di sini.</p>
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold m-0 text-dark">Edit Profil Toko</h2>
+            <p class="text-muted mb-0">Kelola identitas, alamat, dan informasi rekening toko Anda di sini.</p>
+        </div>
+        <a href="{{ route('seller.store-profile.index') }}" class="btn btn-light border rounded-pill px-4 py-2 text-secondary fw-semibold">
+            <i class="bi bi-arrow-left me-2"></i>Kembali ke Profil
+        </a>
+    </div>
 </div>
 
 <div class="row g-4">
     {{-- LEFT: FORM EDIT --}}
     <div class="col-lg-8">
-        <form method="POST" action="/seller/store-profile">
+        <form method="POST" action="{{ route('seller.store-profile.update') }}" enctype="multipart/form-data">
             @csrf
             @method('POST')
             
             <div class="card card-modern border-0 p-5 mb-4">
                 <h5 class="fw-bold mb-4">Informasi Dasar Toko</h5>
+                
+                {{-- FOTO / LOGO TOKO --}}
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-muted small text-uppercase ls-1">Foto / Logo Toko</label>
+                    <div class="d-flex align-items-center gap-4 p-3 bg-light rounded-4">
+                        <div class="position-relative overflow-hidden rounded-circle border border-3 border-emerald shadow-sm flex-shrink-0" style="width: 80px; height: 80px; background: var(--primary-emerald);">
+                            @if(!empty($profile?->logo_url))
+                                <img id="logo_preview" src="{{ $profile->logo_url }}" class="w-100 h-100 object-fit-cover">
+                                <span id="logo_placeholder" class="w-100 h-100 d-none align-items-center justify-content-center text-white fw-bold fs-2">
+                                    {{ substr($profile->nama_toko ?? auth()->user()->name, 0, 1) }}
+                                </span>
+                            @else
+                                <span id="logo_placeholder" class="w-100 h-100 d-flex align-items-center justify-content-center text-white fw-bold fs-2">
+                                    {{ substr($profile->nama_toko ?? auth()->user()->name, 0, 1) }}
+                                </span>
+                                <img id="logo_preview" src="" class="w-100 h-100 object-fit-cover d-none">
+                            @endif
+                        </div>
+                        <div class="flex-grow-1">
+                            <input type="file" name="logo" id="logo_input" class="form-control border-0 bg-white rounded-3 px-3 py-2 shadow-sm" accept="image/*">
+                            <small class="text-muted d-block mt-2" style="font-size: 0.78rem;">
+                                <i class="bi bi-info-circle me-1"></i>Format: JPG, PNG, WEBP (Maksimal 2MB). Disarankan foto persegi (1:1).
+                            </small>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="row mb-4">
                     <div class="col-md-6">
@@ -65,7 +98,10 @@
                 </div>
             </div>
 
-            <div class="text-end">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="{{ route('seller.store-profile.index') }}" class="btn btn-light border px-4 py-3 rounded-4 fw-semibold text-secondary">
+                    <i class="bi bi-x-circle me-2"></i>Batal
+                </a>
                 <button type="submit" class="btn btn-emerald px-5 py-3 rounded-4 shadow-sm fw-bold">
                     <i class="bi bi-save me-2"></i>Simpan Perubahan Profil
                 </button>
@@ -79,8 +115,14 @@
         <div class="card card-modern border-0 p-5 mb-4 text-center overflow-hidden position-relative" style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white;">
             <div class="position-absolute top-0 end-0 p-4 opacity-10 fs-1">🏪</div>
             
-            <div class="profile-avatar mx-auto mb-4 d-flex align-items-center justify-content-center text-white fw-bold rounded-circle border border-4 border-white border-opacity-10 shadow" style="width: 100px; height: 100px; background: var(--primary-emerald); font-size: 2.5rem;">
-                {{ substr($profile->nama_toko ?? auth()->user()->name, 0, 1) }}
+            <div class="profile-avatar mx-auto mb-4 d-flex align-items-center justify-content-center text-white fw-bold rounded-circle border border-4 border-white border-opacity-10 shadow overflow-hidden" style="width: 100px; height: 100px; background: var(--primary-emerald); font-size: 2.5rem;">
+                @if(!empty($profile?->logo_url))
+                    <img id="side_logo_preview" src="{{ $profile->logo_url }}" class="w-100 h-100 object-fit-cover">
+                    <span id="side_logo_initial" class="d-none">{{ substr($profile->nama_toko ?? auth()->user()->name, 0, 1) }}</span>
+                @else
+                    <img id="side_logo_preview" src="" class="w-100 h-100 object-fit-cover d-none">
+                    <span id="side_logo_initial">{{ substr($profile->nama_toko ?? auth()->user()->name, 0, 1) }}</span>
+                @endif
             </div>
             
             <h4 class="fw-bold mb-1">{{ $profile->nama_toko ?? 'Toko Saya' }}</h4>
@@ -149,5 +191,44 @@
 <style>
     .ls-1 { letter-spacing: 1px; }
     .last-border-0:last-child { border-bottom: none !important; margin-bottom: 0 !important; padding-bottom: 0 !important; }
+    .object-fit-cover { object-fit: cover; }
+    .border-emerald { border-color: #10B981 !important; }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const logoInput = document.getElementById('logo_input');
+    const logoPreview = document.getElementById('logo_preview');
+    const logoPlaceholder = document.getElementById('logo_placeholder');
+    const sideLogoPreview = document.getElementById('side_logo_preview');
+    const sideLogoInitial = document.getElementById('side_logo_initial');
+
+    if (logoInput) {
+        logoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    if (logoPreview) {
+                        logoPreview.src = evt.target.result;
+                        logoPreview.classList.remove('d-none');
+                    }
+                    if (logoPlaceholder) {
+                        logoPlaceholder.classList.add('d-none');
+                        logoPlaceholder.classList.remove('d-flex');
+                    }
+                    if (sideLogoPreview) {
+                        sideLogoPreview.src = evt.target.result;
+                        sideLogoPreview.classList.remove('d-none');
+                    }
+                    if (sideLogoInitial) {
+                        sideLogoInitial.classList.add('d-none');
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});
+</script>
 @endsection

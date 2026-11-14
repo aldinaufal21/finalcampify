@@ -42,6 +42,9 @@ class PembeliCartController extends Controller
             if (empty($produk->rent_price) || $produk->rent_price <= 0) {
                 return back()->with('error', 'Produk ini tidak tersedia untuk sewa');
             }
+            if (($produk->stock ?? 0) < 1) {
+                return back()->with('error', 'Stok produk tidak mencukupi untuk disewa');
+            }
         }
 
         Keranjang_pembeli::create([
@@ -67,7 +70,7 @@ class PembeliCartController extends Controller
 
         if ($request->has('quantity')) {
             $qty = max(1, $request->quantity);
-            if ($cart->type === 'buy' && $qty > $cart->product->stock) {
+            if ($qty > ($cart->product->stock ?? 0)) {
                 return back()->with('error', 'Stok tidak mencukupi');
             }
             $cart->update(['qty' => $qty]);

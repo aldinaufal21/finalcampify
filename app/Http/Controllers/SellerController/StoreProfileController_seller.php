@@ -12,15 +12,19 @@ use Illuminate\Http\Request;
 
 class StoreProfileController_seller extends Controller
 {
+    /**
+     * Tampilan profil toko utama (Overview/Show).
+     */
     public function index()
     {
-        $profile = StoreProfile_seller::where('user_id', \Illuminate\Support\Facades\Auth::id())->first();
-        return view('SellerView.store_profile.index_seller', compact('profile'));
+        return $this->show();
     }
 
+    /**
+     * Detail tinjauan profil toko.
+     */
     public function show()
     {
-        // Tampilan profil toko (bukan form edit)
         $userId = \Illuminate\Support\Facades\Auth::id();
         $profile = StoreProfile_seller::where('user_id', $userId)->first();
         
@@ -36,6 +40,15 @@ class StoreProfileController_seller extends Controller
         return view('SellerView.store_profile.show_seller', compact('profile', 'totalProducts', 'rentalProducts', 'avgRating', 'ratingCount'));
     }
 
+    /**
+     * Halaman form edit profil toko.
+     */
+    public function edit()
+    {
+        $profile = StoreProfile_seller::where('user_id', \Illuminate\Support\Facades\Auth::id())->first();
+        return view('SellerView.store_profile.index_seller', compact('profile'));
+    }
+
     public function update(Request $request)
     {
         $profile = StoreProfile_seller::where('user_id', \Illuminate\Support\Facades\Auth::id())->first();
@@ -48,26 +61,39 @@ class StoreProfileController_seller extends Controller
             'bank_name' => 'nullable|string',
             'bank_account_number' => 'nullable|string',
             'bank_account_name' => 'nullable|string',
+            'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        // Otomatis Geocoding Alamat Toko
-        if (!empty($data['alamat'])) {
-            try {
-                $response = \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
-                    'User-Agent' => 'CampifyApp/1.0'
-                ])->get('https://nominatim.openstreetmap.org/search', [
-                    'q' => $data['alamat'],
-                    'format' => 'json',
-                    'limit' => 1
-                ]);
-
-                if ($response->successful() && isset($response->json()[0])) {
-                    $geo = $response->json()[0];
-                    $data['latitude'] = $geo['lat'];
-                    $data['longitude'] = $geo['lon'];
+        // Upload Foto / Logo Toko
+        if ($request->hasFile('logo')) {
+            if ($profile && $profile->logo) {
+                $oldFile = public_path($profile->logo);
+                if (file_exists($oldFile)) {
+                    @unlink($oldFile);
                 }
-            } catch (\Exception $e) {
-                // Silently fail or log error
+            }
+
+            $destinationPath = public_path('assets/images/stores');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+
+            $file = $request->file('logo');
+            $filename = 'store_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move($destinationPath, $filename);
+            $data['logo'] = 'assets/images/stores/' . $filename;
+        }
+
+        // Otomatis Geocoding Alamat Toko dengan Smart Fallback
+        if (!empty($data['alamat'])) {
+            $coords = $this->resolveCoordinates($data['alamat']);
+            if ($coords) {
+                $data['latitude'] = $coords['latitude'];
+                $data['longitude'] = $coords['longitude'];
+            } elseif ($profile && !empty($profile->latitude) && !empty($profile->longitude)) {
+                // Pertahankan koordinat yang sudah ada jika alamat baru tidak dapat di-resolve otomatis
+                $data['latitude'] = $profile->latitude;
+                $data['longitude'] = $profile->longitude;
             }
         }
 
@@ -79,7 +105,62 @@ class StoreProfileController_seller extends Controller
             StoreProfile_seller::create($data);
         }
 
-        return redirect('/seller/store-profile/show')->with('success', 'Profil toko berhasil disimpan' . (isset($data['latitude']) ? '' : ' (Gagal mendapatkan koordinat otomatis)'));
+        return redirect()->route('seller.store-profile.index')->with('success', 'Profil toko berhasil diperbarui.');
+    }
+
+    /**
+     * Helper geocoding alamat dengan smart fallback.
+     */
+    private function resolveCoordinates(string $address): ?array
+    {
+        $address = trim($address);
+        if (empty($address)) {
+            return null;
+        }
+
+        $queries = [$address];
+
+        // Format alternatif 1: Hilangkan detail nomor jalan / RT / RW / Gang
+        $simplified = preg_replace('/(rt|rw|gang|gg|no|blok)\s*[\d\w\/\.-]+/i', '', $address);
+        $simplified = trim(preg_replace('/\s+/', ' ', $simplified));
+        if ($simplified !== $address && strlen($simplified) > 5) {
+            $queries[] = $simplified;
+        }
+
+        // Format alternatif 2: Ambil bagian kecamatan / kota / kabupaten jika dipisahkan tanda koma
+        $parts = array_filter(array_map('trim', explode(',', $address)));
+        if (count($parts) >= 2) {
+            $queries[] = implode(', ', array_slice($parts, -3));
+            $queries[] = implode(', ', array_slice($parts, -2));
+        }
+
+        $queries = array_unique(array_filter($queries));
+
+        foreach ($queries as $q) {
+            try {
+                $response = \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
+                    'User-Agent' => 'CampifyApp/1.0'
+                ])->timeout(3)->get('https://nominatim.openstreetmap.org/search', [
+                    'q' => $q,
+                    'format' => 'json',
+                    'limit' => 1
+                ]);
+
+                if ($response->successful()) {
+                    $json = $response->json();
+                    if (!empty($json[0]['lat']) && !empty($json[0]['lon'])) {
+                        return [
+                            'latitude' => $json[0]['lat'],
+                            'longitude' => $json[0]['lon']
+                        ];
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Abaikan kesalahan koneksi geocoding agar proses simpan tidak terganggu
+            }
+        }
+
+        return null;
     }
 
     /**
