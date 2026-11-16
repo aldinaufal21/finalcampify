@@ -15,13 +15,15 @@ class LandingPageController extends Controller
      */
     public function index()
     {
-        // Jika sudah login sebagai seller atau admin, arahkan langsung ke dashboard masing-masing
+        // Jika sudah login, jangan tampilkan landing page pengunjung, arahkan langsung ke dashboard sesuai role
         if (Auth::check()) {
             $user = Auth::user();
             if ($user->role === 'seller') {
                 return redirect()->route('seller.dashboard');
             } elseif ($user->role === 'admin') {
                 return redirect()->route('admin.dashboard');
+            } else {
+                return redirect()->route('buyer.dashboard');
             }
         }
 
@@ -30,15 +32,15 @@ class LandingPageController extends Controller
                 $q->where('jenis_produk', 'sewa')
                   ->orWhere('rent_price', '>', 0);
             })
-            ->where('status', 'active')
             ->orderBy('rating', 'desc')
             ->latest()
             ->take(4)
             ->get();
 
-        // Jika produk aktif belum banyak, ambil fallback teratas
+        // Jika belum ada filter rating, ambil produk sewa yang tersedia
         if ($rentalProducts->isEmpty()) {
-            $rentalProducts = Product_pembeli::where('jenis_produk', 'sewa')
+            $rentalProducts = Product_pembeli::where('rent_price', '>', 0)
+                ->orWhere('jenis_produk', 'sewa')
                 ->latest()
                 ->take(4)
                 ->get();
@@ -49,14 +51,14 @@ class LandingPageController extends Controller
                 $q->where('jenis_produk', 'jual')
                   ->orWhere('buy_price', '>', 0);
             })
-            ->where('status', 'active')
             ->orderBy('rating', 'desc')
             ->latest()
             ->take(4)
             ->get();
 
         if ($buyProducts->isEmpty()) {
-            $buyProducts = Product_pembeli::where('jenis_produk', 'jual')
+            $buyProducts = Product_pembeli::where('buy_price', '>', 0)
+                ->orWhere('jenis_produk', 'jual')
                 ->latest()
                 ->take(4)
                 ->get();

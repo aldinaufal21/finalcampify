@@ -73,6 +73,7 @@ class ReturnEscrow extends Model
         'expected_date' => 'datetime',
         'actual_date' => 'datetime',
         'refund_disbursed_at' => 'datetime',
+        'dispute_chat_log' => 'array',
     ];
 
     public function order(): BelongsTo

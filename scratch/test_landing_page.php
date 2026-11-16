@@ -36,6 +36,13 @@ if ($response instanceof \Illuminate\View\View) {
 }
 
 echo "\n2. Testing Redirects for Authenticated Admin and Seller...\n";
+$buyer = \App\Models\User::where('role', 'buyer')->first();
+if ($buyer) {
+    Auth::login($buyer);
+    $buyerRes = $controller->index();
+    echo "Buyer redirect status: " . $buyerRes->getStatusCode() . " -> " . $buyerRes->getTargetUrl() . "\n";
+}
+
 $seller = \App\Models\User::where('role', 'seller')->first();
 if ($seller) {
     Auth::login($seller);

@@ -13,7 +13,7 @@
     @include('layouts.navbar_pembeli')
 
     {{-- Content --}}
-    <main class="{{ request()->routeIs('home', 'landing') ? '' : 'pt-24' }}">
+    <main class="{{ request()->routeIs('home', 'landing', 'buyer.dashboard') ? '' : 'pt-24' }}">
         @yield('content')
     </main>
 

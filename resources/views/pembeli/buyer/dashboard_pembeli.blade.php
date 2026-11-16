@@ -2,6 +2,23 @@
 
 @section('content')
 
+@php
+    $heroSlides = [
+        1 => [
+            'bg' => 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=1920&q=80',
+            'preview' => 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=760&q=80',
+        ],
+        2 => [
+            'bg' => 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80',
+            'preview' => 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=760&q=80',
+        ],
+        3 => [
+            'bg' => 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1920&q=80',
+            'preview' => 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=760&q=80',
+        ],
+    ];
+@endphp
+
 <div class="pb-20">
 
     {{-- HERO --}}
@@ -9,9 +26,9 @@
         <div class="relative h-[680px]">
             <div class="absolute inset-0 overflow-hidden">
                 <div id="heroCarousel" class="h-full relative">
-                    @foreach([1,2,3] as $slide)
+                    @foreach($heroSlides as $slide => $slideData)
                         <div class="hero-slide absolute inset-0 {{ $slide === 1 ? 'opacity-100' : 'opacity-0' }} transition-opacity duration-700 ease-in-out" data-slide="{{ $slide }}">
-                            <img src="https://picsum.photos/seed/alam{{ $slide }}/1920/1080" class="absolute inset-0 h-full w-full object-cover brightness-90">
+                            <img src="{{ $slideData['bg'] }}" class="absolute inset-0 h-full w-full object-cover brightness-90">
                             <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent"></div>
                         </div>
                     @endforeach
@@ -46,7 +63,7 @@
                             ‹
                         </button>
                         <div class="relative w-[360px] rounded-[40px] border border-white/20 bg-white/10 p-4 backdrop-blur-xl shadow-2xl shadow-black/20">
-                            <img id="heroPreview" src="https://picsum.photos/seed/alam1/760/540" class="w-full rounded-[32px] object-cover" alt="Outdoor landscape">
+                            <img id="heroPreview" src="{{ $heroSlides[1]['preview'] }}" class="w-full rounded-[32px] object-cover" alt="Outdoor landscape">
                         </div>
                         <button type="button" onclick="nextSlide()" class="absolute right-0 z-20 flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-white/10 text-2xl text-white shadow-lg shadow-black/20 hover:bg-white/20">
                             ›
@@ -75,6 +92,11 @@
             const slides = document.querySelectorAll('.hero-slide');
             const dots = document.querySelectorAll('.hero-dot');
             const preview = document.getElementById('heroPreview');
+            const heroPreviewImages = {
+                1: 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=760&q=80',
+                2: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=760&q=80',
+                3: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=760&q=80'
+            };
             let current = 1;
             const total = slides.length;
             let interval = null;
@@ -90,8 +112,8 @@
                     dot.classList.toggle('bg-white', active);
                     dot.classList.toggle('bg-white/50', !active);
                 });
-                if (preview) {
-                    preview.src = `https://picsum.photos/seed/alam${current}/760/540`;
+                if (preview && heroPreviewImages[current]) {
+                    preview.src = heroPreviewImages[current];
                 }
             }
 

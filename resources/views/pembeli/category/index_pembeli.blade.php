@@ -3,82 +3,78 @@
 @section('content')
 <div class="py-12 max-w-7xl mx-auto px-4">
 
-    <!-- HEADER -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+    <!-- BREADCRUMB / BACK -->
+    <div class="mb-6">
+        <a href="{{ route('produk.index') }}" class="inline-flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-800 font-semibold transition-colors">
+            ← Kembali ke Katalog Produk
+        </a>
+    </div>
+
+    <!-- HEADER & TABS -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6 border-b border-slate-200 pb-8">
         <div>
-            <span class="text-[10px] font-bold text-green-600 uppercase tracking-widest block mb-2">
-                Kategori
+            <span class="inline-block text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full mb-3">
+                Kategori Produk
             </span>
-            <h1 class="text-4xl font-bold uppercase">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 uppercase tracking-tight">
                 {{ $category }}
             </h1>
-            <p class="text-sm text-gray-500 mt-2">
-                Menampilkan {{ $products->count() }} produk untuk {{ $category }}
+            <p class="text-sm text-slate-500 mt-2">
+                Menampilkan <span class="font-bold text-slate-800">{{ $products->count() }}</span> produk dalam kategori ini
             </p>
         </div>
 
-        <!-- Dummy Filter (optional) -->
-        <div class="flex gap-4">
-            <button class="px-4 py-2 border rounded-xl text-xs font-bold">
-                Filter
-            </button>
-            <button class="px-4 py-2 border rounded-xl text-xs font-bold">
-                Urutkan
-            </button>
+        <!-- TYPE FILTER TABS -->
+        <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 self-start md:self-auto">
+            <a href="{{ route('produk.category', ['category' => $category, 'type' => 'all']) }}" 
+               class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ ($currentType ?? 'all') === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' }}">
+                Semua ({{ $countAll ?? $products->count() }})
+            </a>
+            <a href="{{ route('produk.category', ['category' => $category, 'type' => 'buy']) }}" 
+               class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ ($currentType ?? 'all') === 'buy' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900' }}">
+                Beli ({{ $countBuy ?? 0 }})
+            </a>
+            <a href="{{ route('produk.category', ['category' => $category, 'type' => 'rent']) }}" 
+               class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ ($currentType ?? 'all') === 'rent' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900' }}">
+                Sewa ({{ $countRent ?? 0 }})
+            </a>
         </div>
     </div>
 
-    <!-- CONTENT -->
+    <!-- CONTENT / PRODUCTS GRID -->
     @if($products->isEmpty())
-        <div class="py-20 text-center">
-            <p class="text-gray-400">Belum ada produk di kategori ini.</p>
+        <div class="py-20 text-center bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+            <div class="mx-auto h-20 w-20 bg-emerald-50 rounded-full flex items-center justify-center text-4xl mb-4">
+                🏕️
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Belum Ada Produk</h3>
+            <p class="text-sm text-slate-500 max-w-sm mx-auto mb-6">
+                Tidak ada produk
+                @if(($currentType ?? 'all') === 'buy') untuk dibeli
+                @elseif(($currentType ?? 'all') === 'rent') untuk disewa
+                @endif
+                pada kategori "{{ $category }}".
+            </p>
+            @if(($currentType ?? 'all') !== 'all')
+                <a href="{{ route('produk.category', ['category' => $category, 'type' => 'all']) }}" 
+                   class="inline-flex items-center justify-center px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors">
+                    Lihat Semua Tipe Produk
+                </a>
+            @else
+                <a href="{{ route('produk.index') }}" 
+                   class="inline-flex items-center justify-center px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-100">
+                    Lihat Produk Lainnya
+                </a>
+            @endif
         </div>
     @else
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-
             @foreach($products as $product)
-                <div class="bg-white rounded-2xl shadow p-4">
-
-                    <img src="{{ $product->image_url }}" class="w-full h-48 object-cover rounded-xl mb-4">
-
-                    <span class="text-xs text-green-600 font-bold uppercase">
-                        {{ $product->category }}
-                    </span>
-
-                    <h3 class="font-bold mt-2">
-                        {{ $product->name }}
-                    </h3>
-
-                    <div class="mt-3 text-sm">
-                        <div class="flex justify-between">
-                            <span>Beli</span>
-                            <span class="font-bold">
-                                Rp {{ number_format($product->buy_price,0,',','.') }}
-                            </span>
-                        </div>
-
-                        <div class="flex justify-between">
-                            <span>Sewa</span>
-                            <span class="font-bold text-green-600">
-                                Rp {{ number_format($product->rent_price,0,',','.') }}/hari
-                            </span>
-                        </div>
-
-                        <div class="flex justify-between mt-2 pt-2 border-t border-slate-100 text-xs">
-                            <span class="text-slate-500">Sisa Stok</span>
-                            <span class="font-semibold {{ ($product->stock ?? 0) > 0 ? 'text-emerald-600' : 'text-red-500' }}">
-                                {{ ($product->stock ?? 0) > 0 ? $product->stock . ' unit' : 'Habis' }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <a href="/product/{{ $product->id }}" 
-                       class="block mt-4 text-center bg-gray-100 py-2 rounded-xl text-sm font-bold hover:bg-green-600 hover:text-white">
-                        Detail Produk
-                    </a>
-                </div>
+                @include('components.product-card', [
+                    'product' => $product,
+                    'isWishlisted' => in_array($product->id, $wishlistProductIds ?? [])
+                ])
             @endforeach
-
         </div>
     @endif
 

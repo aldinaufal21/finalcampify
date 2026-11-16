@@ -1,7 +1,7 @@
 @extends('layouts.app_pembeli')
 
 @section('content')
-<div class="pt-28 pb-20 bg-slate-50">
+<div class="pt-8 pb-20 bg-slate-50">
     <div class="max-w-2xl mx-auto px-4">
         <div class="mb-8">
             <a href="{{ route('produk.detail.rent', $produk->id) }}" class="text-sm text-green-600 hover:text-green-800 font-semibold">← Kembali ke Detail Produk</a>

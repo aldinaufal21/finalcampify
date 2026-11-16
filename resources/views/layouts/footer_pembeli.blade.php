@@ -31,10 +31,10 @@
       <div>
         <h4 class="text-white font-semibold mb-4">Dukungan</h4>
         <ul class="space-y-2 text-sm text-forest-300">
-          <li><a href="/articles" class="hover:text-forest-100 transition-colors">Tips Camping</a></li>
-          <li><a href="/faq" class="hover:text-forest-100 transition-colors">FAQ</a></li>
-          <li><a href="/contact" class="hover:text-forest-100 transition-colors">Hubungi Kami</a></li>
-          <li><a href="/terms" class="hover:text-forest-100 transition-colors">Syarat & Ketentuan</a></li>
+          <li><a href="{{ route('articles.index') }}" class="hover:text-forest-100 transition-colors">Tips Camping</a></li>
+          <li><a href="#" class="hover:text-forest-100 transition-colors">FAQ</a></li>
+          <li><a href="#" class="hover:text-forest-100 transition-colors">Hubungi Kami</a></li>
+          <li><a href="#" class="hover:text-forest-100 transition-colors">Syarat & Ketentuan</a></li>
         </ul>
       </div>
 

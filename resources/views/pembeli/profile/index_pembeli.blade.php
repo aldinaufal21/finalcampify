@@ -160,65 +160,90 @@
                             Belum ada riwayat penyewaan.
                         </div>
                     @else
-                        <div class="space-y-6">
+                        <div class="space-y-4">
                             @foreach($rentalOrders as $order)
-                                <div class="rounded-3xl border p-6 shadow-sm bg-blue-50/30">
-                                    <div class="flex justify-between items-center mb-4 border-b border-blue-100 pb-3">
-                                        <p class="font-bold text-slate-800">Pesanan #{{ $order->order_number ?? $order->id }}</p>
-                                        <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold uppercase">{{ $order->status }}</span>
-                                        @if($order->returnRequest)
-                                            @php
-                                                $retStatus = $order->returnRequest->status;
-                                                $retColor = match($retStatus) {
-                                                    'checking' => 'bg-amber-100 text-amber-700',
-                                                    'pending' => 'bg-blue-100 text-blue-700',
-                                                    'completed' => 'bg-emerald-100 text-emerald-700',
-                                                    'rejected' => 'bg-gray-100 text-gray-700',
-                                                    default => 'bg-gray-100 text-gray-700'
-                                                };
-                                                $retLabel = match($retStatus) {
-                                                    'checking' => 'Sedang Dicek',
-                                                    'pending' => 'Menunggu Seller',
-                                                    'completed' => 'Selesai',
-                                                    'rejected' => 'Ditolak',
-                                                    default => ucfirst($retStatus)
-                                                };
-                                            @endphp
-                                            <span class="px-3 py-1 {{ $retColor }} rounded-full text-[10px] font-bold uppercase ml-2">{{ $retLabel }}</span>
-                                        @endif
+                                <div class="rounded-3xl border p-6 hover:border-emerald-500 transition-colors group">
+                                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                                        <div class="space-y-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-bold text-gray-900">Pesanan #{{ $order->id }}</span>
+                                                <span class="text-xs text-gray-400">{{ $order->created_at->format('d M Y') }}</span>
+                                            </div>
+                                            <div class="space-y-3">
+                                                @foreach($order->details as $detail)
+                                                    <div class="flex items-center gap-4">
+                                                        <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-xl overflow-hidden shrink-0 border">
+                                                            @if($detail->product?->image_url)
+                                                                <img src="{{ $detail->product->image_url }}" class="w-full h-full object-cover">
+                                                            @else
+                                                                📦
+                                                            @endif
+                                                        </div>
+                                                        <div>
+                                                            <h4 class="font-bold text-gray-800 text-xs">{{ $detail->product?->name ?? 'Produk dihapus' }}</h4>
+                                                            <p class="text-[10px] text-gray-500">{{ $detail->qty }} Item x Rp {{ number_format($detail->harga) }}</p>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-col items-end gap-3">
+                                            <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-bold uppercase tracking-wider border border-blue-100">
+                                                {{ $order->status }}
+                                            </span>
+                                            <a href="{{ route('orders.detail', $order->id) }}" class="text-[10px] font-bold text-emerald-600 hover:underline">
+                                                Lihat Detail →
+                                            </a>
+                                        </div>
                                     </div>
-                                    <div class="space-y-3">
-                                        @foreach($order->details as $item)
-                                            @if($item->type === 'rent' || str_contains(strtolower($item->product->name ?? ''), '(sewa)'))
-                                                <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-blue-50 shadow-sm">
-                                                    @php
-                                                        $imgPath = $item->product?->image ?? $item->product?->gambar;
-                                                        if ($imgPath && !str_starts_with($imgPath, 'assets/images/') && !str_starts_with($imgPath, 'storage/') && !str_starts_with($imgPath, 'http')) {
-                                                            if (file_exists(public_path('assets/images/' . $imgPath))) {
-                                                                $imgPath = 'assets/images/' . $imgPath;
-                                                            } else {
-                                                                $imgPath = 'storage/' . $imgPath;
-                                                            }
-                                                        }
-                                                    @endphp
-                                                    <div class="w-12 h-12 flex-shrink-0">
-                                                        @if($imgPath && (file_exists(public_path($imgPath)) || str_contains($imgPath, 'http')))
-                                                            <img src="{{ asset($imgPath) }}" class="w-full h-full object-cover rounded-xl shadow-sm">
-                                                        @else
-                                                            <div class="w-full h-full bg-slate-100 rounded-xl flex items-center justify-center text-xl">📦</div>
-                                                        @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            @elseif($tab === 'purchases')
+                <div class="bg-white rounded-3xl p-8 shadow-sm">
+                    <h2 class="text-2xl font-bold mb-4">Pembelian Saya</h2>
+                    @if($purchaseOrders->isEmpty())
+                        <div class="rounded-3xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
+                            Belum ada riwayat pembelian.
+                        </div>
+                    @else
+                        <div class="space-y-4">
+                            @foreach($purchaseOrders as $order)
+                                <div class="rounded-3xl border p-6 hover:border-emerald-500 transition-colors group">
+                                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                                        <div class="space-y-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-bold text-gray-900">Pesanan #{{ $order->id }}</span>
+                                                <span class="text-xs text-gray-400">{{ $order->created_at->format('d M Y') }}</span>
+                                            </div>
+                                            <div class="space-y-3">
+                                                @foreach($order->details as $detail)
+                                                    <div class="flex items-center gap-4">
+                                                        <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-xl overflow-hidden shrink-0 border">
+                                                            @if($detail->product?->image_url)
+                                                                <img src="{{ $detail->product->image_url }}" class="w-full h-full object-cover">
+                                                            @else
+                                                                📦
+                                                            @endif
+                                                        </div>
+                                                        <div>
+                                                            <h4 class="font-bold text-gray-800 text-xs">{{ $detail->product?->name ?? 'Produk dihapus' }}</h4>
+                                                            <p class="text-[10px] text-gray-500">{{ $detail->qty }} Item x Rp {{ number_format($detail->harga) }}</p>
+                                                        </div>
                                                     </div>
-                                                    <div class="flex-1">
-                                                        <p class="text-xs font-bold text-slate-800">{{ $item->product?->name ?? $item->product?->nama_produk }}</p>
-                                                        <p class="text-[10px] text-slate-500">{{ $item->duration ?? 3 }} Hari &bull; Rp {{ number_format($item->harga) }}</p>
-                                                    </div>
-                                                    <a href="{{ route('orders.detail', ['id' => $order->id, 'detail_id' => $item->id]) }}" 
-                                                       class="px-4 py-2 bg-blue-600 text-white text-[10px] font-bold rounded-xl hover:bg-blue-700 transition">
-                                                        DETAIL SEWA
-                                                    </a>
-                                                </div>
-                                            @endif
-                                        @endforeach
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-col items-end gap-3">
+                                            <span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-bold uppercase tracking-wider border border-emerald-100">
+                                                {{ $order->status }}
+                                            </span>
+                                            <a href="{{ route('orders.detail', $order->id) }}" class="text-[10px] font-bold text-emerald-600 hover:underline">
+                                                Lihat Detail →
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             @endforeach

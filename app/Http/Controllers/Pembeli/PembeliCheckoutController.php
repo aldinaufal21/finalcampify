@@ -105,8 +105,12 @@ class PembeliCheckoutController extends Controller
         $buktiPath = null;
         if ($r->hasFile('bukti_pembayaran')) {
             $file = $r->file('bukti_pembayaran');
+            $uploadDir = public_path('uploads/pembayaran');
+            if (!file_exists($uploadDir)) {
+                @mkdir($uploadDir, 0755, true);
+            }
             $filename = time() . '_' . Auth::id() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/pembayaran'), $filename);
+            $file->move($uploadDir, $filename);
             $buktiPath = 'uploads/pembayaran/' . $filename;
         }
 
@@ -128,7 +132,7 @@ class PembeliCheckoutController extends Controller
         // Otomatis Geocoding Alamat Pengiriman
         try {
             $fullAddress = $user->address . ', ' . $user->district . ', ' . $user->city;
-            $response = \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
+            $response = \Illuminate\Support\Facades\Http::timeout(3)->withoutVerifying()->withHeaders([
                 'User-Agent' => 'CampifyApp/1.0'
             ])->get('https://nominatim.openstreetmap.org/search', [
                 'q' => $fullAddress,

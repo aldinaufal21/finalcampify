@@ -12,11 +12,10 @@ use Carbon\Carbon;
 
 class PembeliOrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $user = auth()->user();
-        $orders = Order_pembeli::where('user_id', $user->id)->latest()->get();
-        return view('pembeli.orders.index_pembeli', compact('orders', 'user'));
+        $tab = in_array($request->query('tab'), ['rentals', 'orders', 'sewa']) ? 'rentals' : 'purchases';
+        return redirect()->route('profile', ['tab' => $tab]);
     }
 
     public function detail($id, Request $request)
@@ -96,6 +95,8 @@ class PembeliOrderController extends Controller
             ]);
 
             $depositAmount = ($detail->product->escrow_amount > 0) ? $detail->product->escrow_amount : (($detail->product->buy_price ?? 0) * 0.25);
+
+            $depositAmount = ($detail->product->buy_price ?? 0) * 0.25;
             $rentalFeeAmount = $detail->harga;
             $escrowTotal = $depositAmount + $rentalFeeAmount;
 
@@ -148,16 +149,16 @@ class PembeliOrderController extends Controller
                     'tanggal_pengembalian' => now(),
                     'actual_date' => now(),
                     'denda' => 0,
-                    'kondisi_barang' => 'belum_dicek',
-                    'status' => 'shipping',
+                    'kondisi_barang' => 'baik',
+                    'status' => 'completed',
                     'escrow_total' => (string) $escrowTotal,
                     'deposit_amount' => (string) $depositAmount,
                     'rental_fee_amount' => (string) $rentalFeeAmount,
                     'expected_date' => $endDate,
                     'late_fee' => '0',
                     'damage_fee' => '0',
-                    'to_seller' => '0',
-                    'to_buyer' => '0',
+                    'to_seller' => (string) ($rentalFeeAmount - $adminFee),
+                    'to_buyer' => (string) $depositAmount,
                     'total_fines' => '0',
                     'deficit' => '0',
                     'buyer_refund_bank_name' => $request->buyer_refund_bank_name,

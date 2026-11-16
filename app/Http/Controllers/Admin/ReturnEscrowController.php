@@ -249,6 +249,19 @@ class ReturnEscrowController extends Controller
 
     public function disburseRefund(ReturnEscrow $returnEscrow)
     {
+        if ($returnEscrow->status !== 'completed') {
+            return back()->with('error', 'Status pengembalian belum selesai (completed).');
+        }
+
+        $returnEscrow->update([
+            'refund_disbursed_at' => now(),
+        ]);
+
+        return back()->with('success', 'Dana jaminan pembeli & dana sewa seller berhasil ditandai sebagai telah dicairkan.');
+    }
+
+    public function sendMediationMessage(Request $request, ReturnEscrow $returnEscrow)
+    {
         if ($returnEscrow->type === ReturnEscrow::TYPE_JUAL_BELI) {
             abort(403, 'Aksi tidak diizinkan untuk retur jual beli.');
         }

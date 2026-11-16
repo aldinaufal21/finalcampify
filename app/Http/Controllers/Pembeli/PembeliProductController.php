@@ -189,15 +189,11 @@ class PembeliProductController extends Controller
     {
         $produk = Product_pembeli::findOrFail($id);
 
-        // Prioritaskan jenis_produk / is_rental sebagai penentu tipe
-        // buy_price pada produk sewa dipakai sebagai nilai deposit/escrow, bukan harga jual
-        if ($produk->jenis_produk === 'sewa' || $produk->is_rental) {
+        if ($produk->jenis_produk === 'sewa' || $produk->is_rental || ($produk->rent_price > 0 && $produk->buy_price <= 0)) {
             return redirect()->route('produk.detail.rent', $id);
-        } elseif ($produk->jenis_produk === 'jual') {
-            return redirect()->route('produk.detail.buy', $id);
         }
 
-        abort(404);
+        return redirect()->route('produk.detail.buy', $id);
     }
 
     // ================= DETAIL BELI =================
@@ -320,13 +316,48 @@ class PembeliProductController extends Controller
     }
 
     // ================= CATEGORY =================
-    public function category($category)
+    public function category(Request $request, $category)
     {
-        $products = Product_pembeli::where('category', $category)->get();
+        $type = $request->query('type', 'all');
+        $query = Product_pembeli::where('category', $category);
+
+        if ($type === 'buy') {
+            $query->where(function ($q) {
+                $q->where('jenis_produk', 'jual')
+                  ->orWhere(function ($sub) {
+                      $sub->where('buy_price', '>', 0)->where('rent_price', '<=', 0);
+                  });
+            });
+        } elseif ($type === 'rent') {
+            $query->where(function ($q) {
+                $q->where('jenis_produk', 'sewa')
+                  ->orWhere('is_rental', true)
+                  ->orWhere(function ($sub) {
+                      $sub->where('rent_price', '>', 0)->where('buy_price', '<=', 0);
+                  });
+            });
+        }
+
+        $products = $query->latest()->get();
+        $wishlistProductIds = $this->getWishlistProductIds();
+
+        // Hitung total untuk badge tab
+        $allProducts = Product_pembeli::where('category', $category)->get();
+        $countBuy = $allProducts->filter(function ($p) {
+            return $p->jenis_produk === 'jual' || ($p->buy_price > 0 && $p->rent_price <= 0);
+        })->count();
+        $countRent = $allProducts->filter(function ($p) {
+            return $p->jenis_produk === 'sewa' || $p->is_rental || ($p->rent_price > 0 && $p->buy_price <= 0);
+        })->count();
 
         return view('pembeli.category.index_pembeli', [
             'category' => $category,
-            'products' => $products
+            'products' => $products,
+            'currentType' => $type,
+            'wishlistProductIds' => $wishlistProductIds,
+            'countAll' => $allProducts->count(),
+            'countBuy' => $countBuy,
+            'countRent' => $countRent,
         ]);
     }
 

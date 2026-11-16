@@ -80,7 +80,7 @@
 
                 <form action="{{ route('cart.add') }}" method="POST" class="space-y-5">
                     @csrf
-                    <input type="hidden" name="produk_id" value="{{ $produk->id }}">
+                    <input type="hidden" name="product_id" value="{{ $produk->id }}">
                     <input type="hidden" name="type" value="buy">
                     <input type="hidden" name="redirect" value="checkout">
 
@@ -123,7 +123,7 @@
 
                 <form action="{{ route('cart.add') }}" method="POST" class="space-y-5">
                     @csrf
-                    <input type="hidden" name="produk_id" value="{{ $produk->id }}">
+                    <input type="hidden" name="product_id" value="{{ $produk->id }}">
                     <input type="hidden" name="type" value="rent">
                     <input type="hidden" name="redirect" value="checkout">
 

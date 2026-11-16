@@ -114,9 +114,28 @@ class RentalController_seller extends Controller
             if (array_key_exists($request->status, $statusMap)) {
                 $rental->order->update(['status' => $statusMap[$request->status]]);
             }
+
+            return back()->with('success', 'Barang diterima dalam kondisi baik / tercover deposit. Pengembalian sewa selesai otomatis.');
+        }
+    }
+
+    public function verifyDendaPayment($id)
+    {
+        $rental = $this->sellerRentals()->findOrFail($id);
+        $returnRequest = \App\Models\ReturnEscrow::where('order_id', $rental->order_id)->first();
+
+        if (!$returnRequest) {
+            return back()->with('error', 'Data pengembalian tidak ditemukan.');
         }
 
-        return redirect('/seller/rentals')->with('success', 'Penyewaan berhasil diupdate');
+        $returnRequest->update(['status' => 'completed']);
+        $rental->update(['status' => 'completed']);
+
+        if ($rental->order) {
+            $rental->order->update(['status' => 'selesai']);
+        }
+
+        return back()->with('success', 'Pembayaran sisa denda berhasil diverifikasi. Transaksi sewa selesai.');
     }
 
     public function approveRequest($id)

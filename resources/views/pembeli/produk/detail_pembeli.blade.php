@@ -1,7 +1,7 @@
 @extends('layouts.app_pembeli')
 
 @section('content')
-<div class="pt-28 pb-20 bg-slate-50">
+<div class="pt-8 pb-20 bg-slate-50">
     <div class="max-w-7xl mx-auto px-4">
 
         <div class="mb-6 flex items-center justify-between gap-4">
@@ -50,36 +50,64 @@
 
             <aside class="space-y-6">
                 <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-                    <div class="flex items-center justify-between gap-4 mb-6">
-                        <div>
-                            <div class="flex items-center gap-3">
-                                <div>
-                                    <p class="text-sm uppercase tracking-[0.2em] text-emerald-600 font-semibold mb-2">
-                                        {{ ($mode ?? 'buy') === 'rent' ? 'Detail Penyewaan' : 'Detail Pembelian' }}
-                                    </p>
-                                    <h1 class="text-3xl font-bold text-slate-900">{{ $produk->name }}</h1>
-                                </div>
-                                @auth
-                                    <form action="{{ route('wishlist.toggle') }}" method="POST" class="inline-flex items-center">
-                                        @csrf
-                                        <input type="hidden" name="product_id" value="{{ $produk->id }}">
-                                        <button type="submit" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 transition duration-200 
-                                            {{ in_array($produk->id, $wishlistProductIds ?? []) ? 'bg-red-100 text-red-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100' }}"
-                                                title="Tambah ke favorit">
-                                            {{ in_array($produk->id, $wishlistProductIds ?? []) ? '❤️' : '🤍' }}
-                                        </button>
-                                    </form>
-                                @else
-                                    <a href="{{ route('login') }}" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100" title="Login untuk favorit">
-                                        🤍
-                                    </a>
-                                @endauth
+                    <div class="flex items-start justify-between gap-4 mb-6">
+                        <div class="flex-1 min-w-0 pr-2">
+                            <span class="inline-block text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md mb-2">
+                                {{ ($mode ?? 'buy') === 'rent' ? 'Detail Penyewaan' : 'Detail Pembelian' }}
+                            </span>
+                            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-snug break-words">
+                                {{ $produk->name }}
+                            </h1>
+                            <div class="flex items-center gap-1.5 text-sm text-slate-500 mt-2">
+                                <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                </svg>
+                                <span>Penjual:</span>
+                                <span class="font-semibold text-slate-700 truncate">{{ $produk->store?->nama_toko ?? $produk->seller?->name ?? $produk->owner?->name ?? 'Toko Resmi' }}</span>
                             </div>
-                            <p class="text-sm text-slate-500 mt-1">Penjual: {{ $produk->store?->nama_toko ?? $produk->seller?->name ?? $produk->owner?->name ?? 'Toko Resmi' }}</p>
                         </div>
-                        <a href="{{ route('chat.product.start', $produk->id) }}" class="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 text-slate-600 hover:bg-slate-100" title="Hubungi Penjual">
-                            💬
-                        </a>
+
+                        <!-- Action Buttons: Favorit & Chat -->
+                        <div class="flex items-center gap-2 flex-shrink-0 pt-0.5">
+                            @auth
+                                <form action="{{ route('wishlist.toggle') }}" method="POST" class="inline-flex m-0">
+                                    @csrf
+                                    <input type="hidden" name="product_id" value="{{ $produk->id }}">
+                                    <button type="submit" 
+                                            class="group inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition-all duration-200
+                                            {{ in_array($produk->id, $wishlistProductIds ?? []) 
+                                                ? 'bg-rose-50 border-rose-200 text-rose-500 shadow-sm hover:bg-rose-100 hover:border-rose-300' 
+                                                : 'bg-white border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200 hover:bg-rose-50/50 shadow-sm' }}"
+                                            title="{{ in_array($produk->id, $wishlistProductIds ?? []) ? 'Hapus dari Favorit' : 'Tambah ke Favorit' }}">
+                                        @if(in_array($produk->id, $wishlistProductIds ?? []))
+                                            <svg class="w-5 h-5 fill-current text-rose-500 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 24 24">
+                                                <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/>
+                                            </svg>
+                                        @else
+                                            <svg class="w-5 h-5 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                                            </svg>
+                                        @endif
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ route('login') }}" 
+                                   class="group inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 hover:text-rose-500 hover:border-rose-200 hover:bg-rose-50/50 shadow-sm transition-all duration-200" 
+                                   title="Login untuk favorit">
+                                    <svg class="w-5 h-5 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                                    </svg>
+                                </a>
+                            @endauth
+
+                            <a href="{{ route('chat.product.start', $produk->id) }}" 
+                               class="group inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50/50 shadow-sm transition-all duration-200" 
+                               title="Hubungi Penjual">
+                                <svg class="w-5 h-5 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                </svg>
+                            </a>
+                        </div>
                     </div>
 
 
