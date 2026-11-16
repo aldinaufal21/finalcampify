@@ -3,24 +3,61 @@
 @section('extra_css')
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <style>
-    #tracking-map { height: 400px; border-radius: 24px; z-index: 10; }
-    .map-marker-label { 
-        background: white; 
-        border: 2px solid #10B981; 
-        padding: 4px 12px; 
-        border-radius: 50px; 
-        font-weight: 800; 
-        font-size: 11px; 
-        color: #064E3B;
-        white-space: nowrap; 
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    #tracking-map { 
+        height: 380px; 
+        width: 100%;
+        border-radius: 20px; 
+        z-index: 10; 
+        overflow: hidden;
+    }
+    .custom-map-pin {
         display: flex;
         align-items: center;
         gap: 6px;
+        background: #ffffff;
+        color: #0f172a;
+        padding: 5px 12px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 800;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 10px -2px rgba(0, 0, 0, 0.08);
+        border: 2px solid #059669;
+        white-space: nowrap;
+        pointer-events: auto;
     }
-    .package-icon {
-        filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.3));
-        transition: all 0.5s ease;
+    .custom-map-pin.buyer {
+        border-color: #2563eb;
+        color: #1e3a8a;
+    }
+    .custom-map-pin.courier {
+        background: #0f172a;
+        color: #f8fafc;
+        border-color: #10b981;
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3);
+        animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse-ring {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+        50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    }
+    .leaflet-control-zoom {
+        border: none !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+    }
+    .leaflet-control-zoom a {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: none !important;
+        font-size: 14px !important;
+        width: 32px !important;
+        height: 32px !important;
+        line-height: 32px !important;
+    }
+    .leaflet-control-zoom a:hover {
+        background-color: #f1f5f9 !important;
+        color: #059669 !important;
     }
 </style>
 @endsection
@@ -167,11 +204,24 @@
                             <span class="font-semibold text-slate-800">Telepon:</span> {{ $pesanan->shipping_phone }}
                         </p>
                     </div>
-                    <div class="pt-2">
+                    <div class="pt-2 flex flex-wrap items-center gap-2">
                         <div class="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg">
                             <span class="text-[10px] font-bold text-slate-500 uppercase">Kurir:</span>
                             <span class="text-xs font-bold text-slate-800 uppercase">{{ $pesanan->kurir ?? '-' }}</span>
                         </div>
+                        @php
+                            $realResi = $pesanan->no_resi;
+                            if (!$realResi && $pesanan->sellerOrders && $pesanan->sellerOrders->isNotEmpty()) {
+                                $realResi = $pesanan->sellerOrders->first(fn($so) => !empty($so->no_resi))?->no_resi;
+                            }
+                        @endphp
+                        @if($realResi)
+                            <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                <span class="text-[10px] font-bold text-emerald-700 uppercase">No. Resi:</span>
+                                <span class="text-xs font-mono font-black text-emerald-900" id="noResiText">{{ $realResi }}</span>
+                                <button type="button" onclick="copyResi()" class="text-emerald-700 hover:text-emerald-900 text-[10px] font-bold underline ml-1 cursor-pointer">Salin</button>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -207,36 +257,136 @@
                 </div>
             </div>
 
-            <!-- MAP TRACKING SECTION -->
-            <div class="pt-6 border-b pb-6">
-                <div class="flex items-center justify-between mb-4">
+            <!-- MAP TRACKING & LOGISTICS SECTION -->
+            @php
+                $orderStatus = strtolower($pesanan->status ?? '');
+                $stepIndex = 1;
+                if (in_array($orderStatus, ['diproses', 'menunggu_pengiriman'])) {
+                    $stepIndex = 2;
+                } elseif (in_array($orderStatus, ['dikirim', 'shipping', 'otw'])) {
+                    $stepIndex = 3;
+                } elseif (in_array($orderStatus, ['selesai', 'delivered', 'completed'])) {
+                    $stepIndex = 4;
+                }
+                $storeData = $pesanan->details->first()?->product?->store;
+            @endphp
+            <div class="pt-6 border-b pb-6" id="tracking-section">
+                <!-- Header Pelacakan -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                     <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Lacak Posisi Paket</p>
-                        <h2 class="font-bold text-slate-800">Visual Maps Tracking</h2>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                Live Logistics
+                            </span>
+                            <span class="text-xs font-bold text-slate-400">#{{ $pesanan->order_number ?? $pesanan->id }}</span>
+                        </div>
+                        <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                            <span>Lacak Pengiriman Pesanan</span>
+                        </h2>
                     </div>
-                    @if($pesanan->status == 'dikirim')
-                        <span class="flex items-center gap-2 text-xs font-bold text-emerald-600 animate-pulse">
-                            <span class="w-2 h-2 bg-emerald-600 rounded-full"></span> Live Tracking Active
-                        </span>
-                    @endif
+
+                    <div class="flex items-center gap-2">
+                        @if($orderStatus === 'dikirim')
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-sm">
+                                <i data-lucide="truck" class="w-3.5 h-3.5 animate-bounce"></i> Dalam Pengiriman
+                            </span>
+                        @elseif($orderStatus === 'diproses')
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                <i data-lucide="package" class="w-3.5 h-3.5"></i> Sedang Dikemas
+                            </span>
+                        @elseif($orderStatus === 'selesai')
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Paket Telah Diterima
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+                                <i data-lucide="clock" class="w-3.5 h-3.5"></i> Menunggu Konfirmasi
+                            </span>
+                        @endif
+
+                        <button type="button" id="toggleMapBtn" class="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-slate-100 hover:bg-slate-200 rounded-full transition-all">
+                            <span id="toggleMapText">Sembunyikan Peta</span>
+                        </button>
+                    </div>
                 </div>
-                
-                <div class="relative group">
-                    <div id="tracking-map" class="shadow-inner border border-slate-200"></div>
-                    <div class="absolute bottom-4 left-4 right-4 z-30 flex gap-2">
-                        <div class="bg-white/90 backdrop-blur px-3 py-2 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3">
-                            <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600">
-                                🚚
+
+                <!-- 4-Stage Milestone Stepper -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 mb-5">
+                    <div class="grid grid-cols-4 gap-2 sm:gap-4 relative">
+                        <!-- Progress Line -->
+                        <div class="absolute top-4 left-6 right-6 h-1 bg-slate-200 -z-0">
+                            <div class="h-full bg-emerald-500 transition-all duration-700" style="width: {{ $stepIndex == 1 ? '15%' : ($stepIndex == 2 ? '45%' : ($stepIndex == 3 ? '78%' : '100%')) }};"></div>
+                        </div>
+
+                        <!-- Step 1 -->
+                        <div class="text-center relative z-10">
+                            <div class="w-8 h-8 mx-auto mb-2 rounded-full flex items-center justify-center font-bold text-xs transition-all {{ $stepIndex >= 1 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 ring-4 ring-emerald-50' : 'bg-slate-200 text-slate-500' }}">
+                                ✓
                             </div>
-                            <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Status Kurir</p>
-                                <p class="text-xs font-bold text-slate-800">
-                                    @if($pesanan->status == 'diproses') Pesanan sedang dikemas
-                                    @elseif($pesanan->status == 'dikirim') Sedang dalam perjalanan ke lokasi Anda
-                                    @elseif($pesanan->status == 'selesai') Paket telah diterima
-                                    @else Menunggu konfirmasi pembayaran
-                                    @endif
-                                </p>
+                            <p class="text-xs font-bold text-slate-800 leading-tight">Dibuat</p>
+                            <p class="text-[10px] text-slate-400 hidden sm:block mt-0.5">Pesanan masuk</p>
+                        </div>
+
+                        <!-- Step 2 -->
+                        <div class="text-center relative z-10">
+                            <div class="w-8 h-8 mx-auto mb-2 rounded-full flex items-center justify-center font-bold text-xs transition-all {{ $stepIndex >= 2 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 ring-4 ring-emerald-50' : 'bg-slate-200 text-slate-500' }}">
+                                @if($stepIndex > 2) ✓ @else 2 @endif
+                            </div>
+                            <p class="text-xs font-bold {{ $stepIndex >= 2 ? 'text-slate-800' : 'text-slate-400' }} leading-tight">Dikemas</p>
+                            <p class="text-[10px] text-slate-400 hidden sm:block mt-0.5">Disiapkan toko</p>
+                        </div>
+
+                        <!-- Step 3 -->
+                        <div class="text-center relative z-10">
+                            <div class="w-8 h-8 mx-auto mb-2 rounded-full flex items-center justify-center font-bold text-xs transition-all {{ $stepIndex >= 3 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 ring-4 ring-emerald-50' : 'bg-slate-200 text-slate-500' }}">
+                                @if($stepIndex > 3) ✓ @else 3 @endif
+                            </div>
+                            <p class="text-xs font-bold {{ $stepIndex >= 3 ? 'text-slate-800' : 'text-slate-400' }} leading-tight">Dikirim</p>
+                            <p class="text-[10px] text-slate-400 hidden sm:block mt-0.5">Kurir perjalanan</p>
+                        </div>
+
+                        <!-- Step 4 -->
+                        <div class="text-center relative z-10">
+                            <div class="w-8 h-8 mx-auto mb-2 rounded-full flex items-center justify-center font-bold text-xs transition-all {{ $stepIndex >= 4 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 ring-4 ring-emerald-50' : 'bg-slate-200 text-slate-500' }}">
+                                @if($stepIndex >= 4) ✓ @else 4 @endif
+                            </div>
+                            <p class="text-xs font-bold {{ $stepIndex >= 4 ? 'text-slate-800' : 'text-slate-400' }} leading-tight">Selesai</p>
+                            <p class="text-[10px] text-slate-400 hidden sm:block mt-0.5">Paket sampai</p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Leaflet Interactive Map Container -->
+                <div id="mapWrapper" class="relative group rounded-2xl overflow-hidden border border-slate-200 shadow-sm transition-all duration-300">
+                    <div id="tracking-map"></div>
+
+                    <!-- Bottom floating status overlay -->
+                    <div class="absolute bottom-3 left-3 right-3 z-30 pointer-events-none">
+                        <div class="pointer-events-auto bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-lg border border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0 border border-emerald-100">
+                                    @if($orderStatus === 'dikirim') 🚚 @elseif($orderStatus === 'selesai') 📦 @else 🏪 @endif
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider">Status Terkini</p>
+                                    <p class="text-xs font-extrabold text-slate-800 leading-snug">
+                                        @if($orderStatus == 'diproses')
+                                            Paket sedang disiapkan dan dicek oleh {{ $storeData->nama_toko ?? 'Mitra Toko' }}
+                                        @elseif($orderStatus == 'dikirim')
+                                            Paket sedang dalam perjalanan kurir menuju alamat Anda
+                                        @elseif($orderStatus == 'selesai')
+                                            Paket telah tiba dan diterima di alamat tujuan
+                                        @else
+                                            Menunggu konfirmasi pembayaran pesanan
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-left sm:text-right shrink-0">
+                                <span class="text-[10px] text-slate-400 block font-medium">Lokasi Asal:</span>
+                                <span class="text-xs font-bold text-slate-700">{{ $storeData->nama_toko ?? 'Mitra Campify' }} ({{ $storeData->kota ?? 'Jawa Barat' }})</span>
                             </div>
                         </div>
                     </div>
@@ -595,6 +745,21 @@
 @section('extra_js')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+    function copyResi() {
+        const el = document.getElementById('noResiText');
+        if (!el) return;
+        const text = el.innerText.trim();
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Nomor resi berhasil disalin: ' + text);
+            }).catch(() => {
+                prompt('Salin nomor resi:', text);
+            });
+        } else {
+            prompt('Salin nomor resi:', text);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Data dari PHP
         let storeLat = {{ $pesanan->details->first()->product->store->latitude ?? 'null' }};
@@ -602,47 +767,73 @@
         let destLat = {{ $pesanan->latitude ?? 'null' }};
         let destLng = {{ $pesanan->longitude ?? 'null' }};
         
-        const storeAddr = "{{ $pesanan->details->first()->product->store->alamat ?? '' }}";
-        const buyerAddr = "{{ $pesanan->shipping_address }}, {{ $pesanan->shipping_district }}, {{ $pesanan->shipping_city }}";
-        const status = "{{ $pesanan->status }}";
+        const storeName = "{{ addslashes($pesanan->details->first()->product->store->nama_toko ?? 'Toko Campify') }}";
+        const storeAddr = "{{ addslashes($pesanan->details->first()->product->store->alamat ?? '') }}";
+        const buyerAddr = "{{ addslashes($pesanan->shipping_address . ', ' . $pesanan->shipping_district . ', ' . $pesanan->shipping_city) }}";
+        const status = "{{ strtolower($pesanan->status ?? '') }}";
 
-        // Inisialisasi Map (Default ke Jakarta jika benar-benar kosong)
-        const map = L.map('tracking-map').setView([storeLat || -6.1754, storeLng || 106.8272], 13);
+        const mapEl = document.getElementById('tracking-map');
+        if (!mapEl) return;
+
+        // Inisialisasi Map (Default Jawa Barat / Bandung - Jakarta)
+        const map = L.map('tracking-map', {
+            zoomControl: true,
+            scrollWheelZoom: false
+        }).setView([storeLat || -6.9175, storeLng || 107.6191], 12);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Custom Icons
+        // Toggle Map View
+        const toggleBtn = document.getElementById('toggleMapBtn');
+        const mapWrapper = document.getElementById('mapWrapper');
+        const toggleText = document.getElementById('toggleMapText');
+        let isMapOpen = true;
+
+        if (toggleBtn && mapWrapper) {
+            toggleBtn.addEventListener('click', function() {
+                isMapOpen = !isMapOpen;
+                if (isMapOpen) {
+                    mapWrapper.style.display = 'block';
+                    if (toggleText) toggleText.innerText = 'Sembunyikan Peta';
+                    setTimeout(() => { map.invalidateSize(); }, 200);
+                } else {
+                    mapWrapper.style.display = 'none';
+                    if (toggleText) toggleText.innerText = 'Tampilkan Peta';
+                }
+            });
+        }
+
+        // Custom Marker Icons
         const storeIcon = L.divIcon({ 
-            className: 'custom-div-icon', 
-            html: '<div class="map-marker-label"><span>🏪</span> Toko</div>', 
+            className: 'custom-div-store', 
+            html: `<div class="custom-map-pin"><span>🏪</span> <span>${storeName}</span></div>`, 
             iconSize: [null, null], 
-            iconAnchor: [35, 15] 
-        });
-        const buyerIcon = L.divIcon({ 
-            className: 'custom-div-icon', 
-            html: '<div class="map-marker-label"><span>🏠</span> Anda</div>', 
-            iconSize: [null, null], 
-            iconAnchor: [35, 15] 
-        });
-        const packageIcon = L.divIcon({
-            html: '<div style="font-size: 32px;">🚚</div>',
-            className: 'package-icon',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
+            iconAnchor: [40, 20] 
         });
 
-        let storeMarker, buyerMarker, path, packageMarker;
+        const buyerIcon = L.divIcon({ 
+            className: 'custom-div-buyer', 
+            html: '<div class="custom-map-pin buyer"><span>📍</span> <span>Lokasi Anda</span></div>', 
+            iconSize: [null, null], 
+            iconAnchor: [40, 20] 
+        });
+
+        const courierIcon = L.divIcon({
+            className: 'custom-div-courier',
+            html: '<div class="custom-map-pin courier"><span>🚚</span> <span>Kurir Antar</span></div>',
+            iconSize: [null, null],
+            iconAnchor: [38, 20]
+        });
 
         async function geocode(address) {
             if (!address) return null;
             try {
-                // Percobaan 1: Alamat Lengkap
                 let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
                 let data = await response.json();
                 
-                // Percobaan 2: Jika gagal, coba ambil bagian kota/kecamatan saja
                 if (data.length === 0) {
                     const parts = address.split(',');
                     if (parts.length > 1) {
@@ -660,46 +851,55 @@
         }
 
         async function initTracking() {
-            // Jika koordinat kosong, cari otomatis
+            // Geocoding fallback jika koordinat kosong di database
             if (!storeLat || !storeLng) {
-                const geo = await geocode(storeAddr);
-                if (geo) { storeLat = geo.lat; storeLng = geo.lon; }
+                const geoStore = await geocode(storeAddr);
+                if (geoStore) { storeLat = geoStore.lat; storeLng = geoStore.lon; }
             }
             if (!destLat || !destLng) {
-                const geo = await geocode(buyerAddr);
-                if (geo) { destLat = geo.lat; destLng = geo.lon; }
+                const geoDest = await geocode(buyerAddr);
+                if (geoDest) { destLat = geoDest.lat; destLng = geoDest.lon; }
             }
 
-            // Gunakan fallback akhir jika tetap gagal
-            storeLat = storeLat || -6.1754;
-            storeLng = storeLng || 106.8272;
-            destLat = destLat || -6.2088;
-            destLng = destLng || 106.8456;
+            // Fallback default coordinates jika benar-benar kosong
+            storeLat = storeLat || -6.9034;
+            storeLng = storeLng || 107.6186;
+            destLat = destLat || -6.9389;
+            destLng = destLng || 107.6542;
 
-            // Tambahkan Markers
-            storeMarker = L.marker([storeLat, storeLng], {icon: storeIcon}).addTo(map);
-            buyerMarker = L.marker([destLat, destLng], {icon: buyerIcon}).addTo(map);
+            // Markers Toko & Pembeli
+            const storeMarker = L.marker([storeLat, storeLng], {icon: storeIcon}).addTo(map);
+            const buyerMarker = L.marker([destLat, destLng], {icon: buyerIcon}).addTo(map);
 
-            // Tambahkan Jalur
-            path = L.polyline([[storeLat, storeLng], [destLat, destLng]], {
-                color: '#10B981',
-                weight: 4,
-                dashArray: '10, 15',
-                opacity: 0.5
+            // Rute Visual dengan efek glow ganda
+            L.polyline([[storeLat, storeLng], [destLat, destLng]], {
+                color: '#059669',
+                weight: 8,
+                opacity: 0.25
             }).addTo(map);
 
-            // Tentukan Posisi Paket
-            let packagePos = [storeLat, storeLng];
-            if (status === 'dikirim') {
-                packagePos = [(storeLat + destLat) / 2, (storeLng + destLng) / 2];
-            } else if (status === 'selesai') {
-                packagePos = [destLat, destLng];
-            }
+            const routeLine = L.polyline([[storeLat, storeLng], [destLat, destLng]], {
+                color: '#10b981',
+                weight: 3.5,
+                dashArray: '8, 8',
+                opacity: 0.95
+            }).addTo(map);
 
-            packageMarker = L.marker(packagePos, {icon: packageIcon}).addTo(map);
+            // Tentukan Posisi Paket berdasarkan status aktual
+            let packagePos = [storeLat, storeLng];
+            if (status === 'dikirim' || status === 'shipping') {
+                packagePos = [(storeLat + destLat) / 2, (storeLng + destLng) / 2];
+                L.marker(packagePos, {icon: courierIcon}).addTo(map);
+            } else if (status === 'selesai' || status === 'delivered') {
+                packagePos = [destLat, destLng];
+                L.marker(packagePos, {icon: courierIcon}).addTo(map);
+            } else {
+                // Status diproses / menunggu: paket masih di toko
+                L.marker(packagePos, {icon: courierIcon}).addTo(map);
+            }
             
-            // Zoom ke area rute
-            map.fitBounds(path.getBounds(), {padding: [70, 70]});
+            // Zoom & fit bounds rute
+            map.fitBounds(routeLine.getBounds(), { padding: [60, 60], maxZoom: 14 });
         }
 
         initTracking();

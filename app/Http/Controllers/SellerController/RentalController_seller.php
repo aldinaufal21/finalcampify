@@ -25,7 +25,8 @@ class RentalController_seller extends Controller
                       $uq->where('name', 'like', '%' . $search . '%');
                   })
                   ->orWhereHas('product', function ($pq) use ($search) {
-                      $pq->where('nama_produk', 'like', '%' . $search . '%');
+                      $pq->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('nama_produk', 'like', '%' . $search . '%');
                   });
             });
         }
@@ -109,33 +110,14 @@ class RentalController_seller extends Controller
                 'active' => 'dikirim',
                 'completed' => 'selesai',
                 'cancelled' => 'dibatalkan',
-            ];
+            ]; 
 
             if (array_key_exists($request->status, $statusMap)) {
                 $rental->order->update(['status' => $statusMap[$request->status]]);
             }
-
-            return back()->with('success', 'Barang diterima dalam kondisi baik / tercover deposit. Pengembalian sewa selesai otomatis.');
-        }
-    }
-
-    public function verifyDendaPayment($id)
-    {
-        $rental = $this->sellerRentals()->findOrFail($id);
-        $returnRequest = \App\Models\ReturnEscrow::where('order_id', $rental->order_id)->first();
-
-        if (!$returnRequest) {
-            return back()->with('error', 'Data pengembalian tidak ditemukan.');
         }
 
-        $returnRequest->update(['status' => 'completed']);
-        $rental->update(['status' => 'completed']);
-
-        if ($rental->order) {
-            $rental->order->update(['status' => 'selesai']);
-        }
-
-        return back()->with('success', 'Pembayaran sisa denda berhasil diverifikasi. Transaksi sewa selesai.');
+        return redirect()->route('seller.rentals.show', $rental->id)->with('success', 'Data penyewaan berhasil diperbarui.');
     }
 
     public function approveRequest($id)
@@ -210,17 +192,25 @@ class RentalController_seller extends Controller
 
     public function verifyDendaPayment($id)
     {
-        $rental = $this->sellerRentals()->findOrFail($id);
-        $returnRequest = \App\Models\ReturnEscrow::where('order_id', $rental->order_id)->first();
+        $rentalId = $id instanceof \App\Models\SellerModels\Rental_seller ? $id->id : $id;
+        $rental = $this->sellerRentals()->findOrFail($rentalId);
+        
+        $returnRequest = \App\Models\ReturnEscrow::where('order_id', $rental->order_id)
+            ->orWhere('rental_id', $rental->id)
+            ->first();
 
         if (!$returnRequest) {
             return back()->with('error', 'Data pengembalian tidak ditemukan.');
         }
 
-        $returnRequest->update(['status' => 'waiting_refund']);
-        $rental->update(['status' => 'waiting_refund']);
+        $returnRequest->update(['status' => 'completed']);
+        $rental->update(['status' => 'completed']);
 
-        return back()->with('success', 'Pembayaran sisa denda berhasil diverifikasi. Menunggu Admin mentransfer dana refund.');
+        if ($rental->order) {
+            $rental->order->update(['status' => 'selesai']);
+        }
+
+        return back()->with('success', 'Pembayaran sisa denda berhasil diverifikasi. Transaksi sewa selesai.');
     }
 
 

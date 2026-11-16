@@ -151,10 +151,23 @@ class SellerOrderService
             $status = 'diproses';
         }
 
-        $order->forceFill([
+        $latestResi = $sellerOrders->first(fn($so) => !empty($so->no_resi))?->no_resi;
+        $latestVideo = $sellerOrders->first(fn($so) => !empty($so->video_pengiriman))?->video_pengiriman;
+        $latestVideoHash = $sellerOrders->first(fn($so) => !empty($so->video_pengiriman_hash))?->video_pengiriman_hash;
+
+        $fillData = [
             'status' => $status,
             'received_at' => $status === 'selesai' ? $receivedAt : $order->received_at,
-        ])->save();
+        ];
+        if ($latestResi && empty($order->no_resi)) {
+            $fillData['no_resi'] = $latestResi;
+        }
+        if ($latestVideo && empty($order->video_pengiriman)) {
+            $fillData['video_pengiriman'] = $latestVideo;
+            $fillData['video_pengiriman_hash'] = $latestVideoHash;
+        }
+
+        $order->forceFill($fillData)->save();
     }
 
     public function mapOrderStatus(?string $status): string

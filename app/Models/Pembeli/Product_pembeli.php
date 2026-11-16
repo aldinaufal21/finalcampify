@@ -98,6 +98,10 @@ class Product_pembeli extends Model
             return $imageField;
         }
 
+        if (str_starts_with($imageField, 'photo-')) {
+            return 'https://images.unsplash.com/' . $imageField;
+        }
+
         $imageField = str_replace('\\', '/', $imageField);
         $filename = basename($imageField);
 

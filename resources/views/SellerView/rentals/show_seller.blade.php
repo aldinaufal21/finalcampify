@@ -317,8 +317,8 @@
                     </button>
                 </form>
 
-            <!-- Kondisi 7: Status Completed (Selesai) -->
-            @elseif($returnRequest->status === 'completed')
+            <!-- Kondisi 7: Status Completed (Selesai) atau Waiting Refund (Menunggu Pencairan Admin) -->
+            @elseif(in_array($returnRequest->status, ['completed', 'waiting_refund']))
                 <div class="text-center py-4">
                     <div class="fs-1 text-success mb-3">✅</div>
                     <h6 class="fw-bold text-success">Pengembalian Selesai & Sukses!</h6>

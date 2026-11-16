@@ -1,87 +1,156 @@
 @extends('layouts.app_pembeli')
 
+@section('extra_css')
+<style>
+    .landing-hero-content-wrapper {
+        padding-top: 195px !important;
+        padding-bottom: 80px !important;
+    }
+    @media (max-width: 640px) {
+        .landing-hero-content-wrapper {
+            padding-top: 175px !important;
+            padding-bottom: 60px !important;
+        }
+    }
+    .landing-hero-desc, .landing-hero-desc p {
+        color: #f8fafc !important;
+    }
+</style>
+@endsection
+
 @section('content')
 <div class="bg-slate-50 text-slate-800 antialiased">
 
     {{-- ==================== 1. HERO SECTION ==================== --}}
-    <section class="relative min-h-[85vh] lg:min-h-[90vh] flex items-center overflow-hidden">
-        {{-- Background Image dengan Fallback Unsplash HD --}}
+    <section class="relative min-h-[780px] lg:min-h-[850px] overflow-hidden">
+        {{-- Background Image: Foto Camping Malam Hari Premium (Sesuai Dashboard Pembeli) --}}
         <div class="absolute inset-0 z-0">
-            <img src="{{ file_exists(public_path('assets/images/hero_campify.jpg')) ? asset('assets/images/hero_campify.jpg') : 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=1920&q=80' }}" 
-                 alt="Petualangan Alam Bebas Campify" 
+            <img src="https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=1920&q=80" 
+                 alt="Camping Alam Bebas Campify" 
                  class="w-full h-full object-cover object-center brightness-90">
-            {{-- Gradient overlay lembut untuk keterbacaan teks maksimal --}}
-            <div class="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/60 to-transparent"></div>
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/40"></div>
+            
+            {{-- 1. Top Vignette: Menjamin Navbar Transparan Terbaca Sempurna Tanpa Tabrakan --}}
+            <div class="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-black/85 via-black/40 to-transparent pointer-events-none"></div>
+
+            {{-- 2. Left High-Contrast Gradient: Menjamin Seluruh Teks Terbaca Sangat Jelas --}}
+            <div class="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent"></div>
+
+            {{-- 3. Bottom Soft Gradient: Transisi Halus ke Section Statistik --}}
+            <div class="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-950/90 to-transparent pointer-events-none"></div>
         </div>
 
-        {{-- Hero Content --}}
-        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-28 pb-16">
-            <div class="max-w-2xl">
-                {{-- Badge Tagline --}}
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-emerald-300 text-xs font-semibold mb-6 shadow-sm">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>Platform Sewa & Jual Alat Camping #1</span>
-                </div>
-
-                {{-- Headline --}}
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight mb-5 drop-shadow-sm">
-                    Petualangan Nyaman, <br>
-                    <span class="text-emerald-400">Tanpa Beban.</span>
-                </h1>
-
-                {{-- Subheadline --}}
-                <p class="text-base sm:text-lg text-slate-200 leading-relaxed mb-8 font-normal drop-shadow">
-                    Lengkapi persiapan mendaki dan campingmu dengan perlengkapan terbaik. <strong class="text-white">Sewa hemat harian</strong> bergaransi proteksi <span class="text-emerald-300 font-semibold underline decoration-emerald-400/50 underline-offset-4">escrow</span>, atau <strong class="text-white">beli perlengkapan original</strong> dari mitra toko terpercaya.
-                </p>
-
-                {{-- Dual CTA Buttons --}}
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-10">
-                    <a href="{{ route('produk.rental') }}" 
-                       class="inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-900/30 transition-all hover:scale-105 active:scale-95">
-                        <i data-lucide="tent" class="w-4 h-4"></i>
-                        <span>Mulai Sewa Gear</span>
-                    </a>
-
-                    <a href="{{ route('produk.index') }}" 
-                       class="inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white font-semibold text-sm backdrop-blur-md transition-all hover:scale-105 active:scale-95">
-                        <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-300"></i>
-                        <span>Beli Perlengkapan</span>
-                    </a>
-                </div>
-
-                {{-- Trust Pillars Strip --}}
-                <div class="grid grid-cols-3 gap-3 pt-6 border-t border-white/20">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-emerald-400 shrink-0">
-                            <i data-lucide="shield-check" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-white leading-tight">Escrow Aman</div>
-                            <div class="text-[10px] text-slate-300">Jaminan kembali 100%</div>
-                        </div>
+        {{-- Hero Content: Diberi Padding Top Pasti (195px) agar Berada Nyaman di Bawah Navbar --}}
+        <div class="landing-hero-content-wrapper relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full" style="padding-top: 195px !important; padding-bottom: 80px !important;">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-12">
+                
+                {{-- Kolom Kiri: Teks & Aksi Utama --}}
+                <div class="max-w-2xl">
+                    {{-- Badge Tagline --}}
+                    <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs sm:text-sm font-bold mb-6 shadow-md"
+                         style="background: rgba(16, 185, 129, 0.25) !important; color: #34d399 !important; border: 1px solid rgba(52, 211, 153, 0.45) !important; backdrop-filter: blur(10px);">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>Platform Sewa & Jual Alat Camping #1 di Indonesia</span>
                     </div>
 
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-emerald-400 shrink-0">
-                            <i data-lucide="sparkles" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-white leading-tight">Gear Terawat</div>
-                            <div class="text-[10px] text-slate-300">Bersih & siap pakai</div>
-                        </div>
+                    {{-- Headline --}}
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15] mb-5 drop-shadow-2xl" style="color: #ffffff !important;">
+                        Petualangan Nyaman, <br>
+                        <span style="color: #34d399 !important;" class="drop-shadow-md">Tanpa Beban.</span>
+                    </h1>
+
+                    {{-- Subheadline (100% Kontras Tinggi dengan Teks Putih Terang) --}}
+                    <p class="landing-hero-desc text-base sm:text-lg leading-relaxed mb-8 font-normal drop-shadow-md" style="color: #f8fafc !important;">
+                        Lengkapi persiapan mendaki dan campingmu dengan perlengkapan terbaik. <span class="font-extrabold underline decoration-emerald-400 decoration-2 underline-offset-4" style="color: #ffffff !important;">Sewa hemat harian</span> bergaransi proteksi <span class="font-extrabold underline decoration-emerald-400 decoration-2 underline-offset-4" style="color: #6ee7b7 !important;">escrow</span>, atau <span class="font-extrabold underline decoration-emerald-400 decoration-2 underline-offset-4" style="color: #ffffff !important;">beli perlengkapan original</span> dari mitra toko terpercaya.
+                    </p>
+
+                    {{-- Dual CTA Buttons --}}
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-10">
+                        <a href="{{ route('produk.rental') }}" 
+                           class="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-full font-bold text-sm sm:text-base shadow-xl transition-all hover:scale-105 active:scale-95"
+                           style="background: #059669 !important; color: #ffffff !important; box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.5) !important;">
+                            <i data-lucide="tent" class="w-5 h-5"></i>
+                            <span>Mulai Sewa Gear</span>
+                        </a>
+
+                        <a href="{{ route('produk.index') }}" 
+                           class="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-full font-bold text-sm sm:text-base transition-all hover:scale-105 active:scale-95 shadow-lg"
+                           style="background: rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.35) !important; backdrop-filter: blur(10px);">
+                            <i data-lucide="shopping-bag" class="w-5 h-5" style="color: #34d399 !important;"></i>
+                            <span>Beli Perlengkapan</span>
+                        </a>
                     </div>
 
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-emerald-400 shrink-0">
-                            <i data-lucide="map-pin" class="w-5 h-5"></i>
+                    {{-- Trust Pillars Strip (Glass Cards Rapi Samping-ke-Samping, 100% Kontras Tinggi) --}}
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3.5 pt-6 border-t border-white/20 max-w-2xl">
+                        <div class="flex items-center gap-2 sm:gap-3 rounded-2xl p-2.5 sm:p-3.5 shadow-xl transition-all"
+                             style="background: rgba(10, 25, 20, 0.75); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0"
+                                 style="background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4);">
+                                <i data-lucide="shield-check" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-xs sm:text-sm font-black leading-tight truncate" style="color: #ffffff !important;">Escrow Aman</div>
+                                <div class="text-[9px] sm:text-[11px] font-semibold mt-0.5 truncate" style="color: #a7f3d0 !important;">Jaminan kembali 100%</div>
+                            </div>
                         </div>
-                        <div>
-                            <div class="text-xs font-bold text-white leading-tight">Toko Terverifikasi</div>
-                            <div class="text-[10px] text-slate-300">Mitra rental resmi</div>
+
+                        <div class="flex items-center gap-2 sm:gap-3 rounded-2xl p-2.5 sm:p-3.5 shadow-xl transition-all"
+                             style="background: rgba(10, 25, 20, 0.75); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0"
+                                 style="background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4);">
+                                <i data-lucide="sparkles" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-xs sm:text-sm font-black leading-tight truncate" style="color: #ffffff !important;">Gear Terawat</div>
+                                <div class="text-[9px] sm:text-[11px] font-semibold mt-0.5 truncate" style="color: #a7f3d0 !important;">Bersih & siap pakai</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 sm:gap-3 rounded-2xl p-2.5 sm:p-3.5 shadow-xl transition-all"
+                             style="background: rgba(10, 25, 20, 0.75); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0"
+                                 style="background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4);">
+                                <i data-lucide="map-pin" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-xs sm:text-sm font-black leading-tight truncate" style="color: #ffffff !important;">Toko Resmi</div>
+                                <div class="text-[9px] sm:text-[11px] font-semibold mt-0.5 truncate" style="color: #a7f3d0 !important;">Mitra terverifikasi</div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {{-- Kolom Kanan: Preview Card Outdoor Estetik (Mirip Dashboard Pembeli) --}}
+                <div class="hidden lg:flex flex-col items-center justify-center max-w-sm w-full">
+                    <div class="relative w-full rounded-3xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-xl p-4 shadow-2xl shadow-black/40 group hover:border-emerald-400/50 transition-all duration-500">
+                        <div class="relative h-64 rounded-2xl overflow-hidden mb-4">
+                            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=760&q=80" 
+                                 alt="Gunung & Hutan Campify" 
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                            <span class="absolute top-3 left-3 bg-emerald-600/90 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1.5 border border-emerald-400/30">
+                                <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                                Gear Siap Pakai
+                            </span>
+                            <div class="absolute bottom-3 left-3 right-3 text-white">
+                                <p class="text-xs font-semibold text-emerald-300 uppercase tracking-wider">Penyewaan & Pembelian</p>
+                                <p class="text-sm font-extrabold truncate">Paket Tenda Dome & Carrier 60L</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-white px-2 pb-1">
+                            <div>
+                                <p class="text-[11px] text-slate-300">Mulai dari</p>
+                                <p class="text-base font-black text-emerald-400">Rp 25.000 <span class="text-xs font-normal text-slate-300">/hari</span></p>
+                            </div>
+                            <a href="{{ route('produk.rental') }}" class="px-4 py-2 rounded-xl bg-white/20 hover:bg-emerald-600 text-white text-xs font-bold transition-all border border-white/20 shadow-sm flex items-center gap-1">
+                                <span>Lihat Gear</span>
+                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </section>
@@ -297,7 +366,7 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                @foreach($featuredCategories as $cat)
+                @foreach($featuredCategories ?? [] as $cat)
                 <a href="{{ route('produk.category', $cat['key']) }}" 
                    class="group relative overflow-hidden rounded-3xl h-64 border border-slate-200/80 shadow-sm hover:shadow-lg transition-all duration-300">
                     <img src="{{ $cat['image'] }}" 
@@ -414,27 +483,35 @@
     {{-- ==================== 8. SELLER CALLOUT ==================== --}}
     <section class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl text-white p-8 sm:p-12 lg:p-14 relative overflow-hidden shadow-xl">
+            <div class="rounded-3xl p-8 sm:p-12 lg:p-14 relative overflow-hidden shadow-2xl" 
+                 style="background: linear-gradient(135deg, #071a14 0%, #0e2e24 50%, #064e3b 100%); border: 1px solid rgba(16, 185, 129, 0.35); box-shadow: 0 25px 50px -12px rgba(6, 78, 59, 0.4);">
+                
+                {{-- Decorative Ambient Glow --}}
+                <div class="absolute -right-20 -bottom-20 w-80 h-80 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(16, 185, 129, 0.3) 0%, transparent 70%);"></div>
+
                 <div class="max-w-2xl relative z-10">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4 border border-white/15">
-                        <i data-lucide="store" class="w-3.5 h-3.5"></i>
+                    <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider mb-4 shadow-sm"
+                          style="background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4);">
+                        <i data-lucide="store" class="w-4 h-4"></i>
                         <span>MITRA PENJUAL & RENTAL</span>
                     </span>
 
-                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-3">
+                    <h2 class="text-2xl sm:text-4xl font-black tracking-tight mb-4" style="color: #ffffff !important; line-height: 1.2;">
                         Punya Alat Camping yang Menganggur di Rumah?
                     </h2>
-                    <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
+                    
+                    <p class="text-sm sm:text-base leading-relaxed mb-8" style="color: #e2e8f0 !important; font-weight: 400;">
                         Buka toko rentalmu sendiri di Campify! Jangkau ratusan pendaki di kotamu. Nikmati sistem escrow anti-rugi, verifikasi KTP penyewa, dan pencairan dana langsung ke rekeningmu.
                     </p>
 
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                         <a href="{{ route('register') }}" 
-                           class="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-900/40 transition-all hover:scale-105 active:scale-95">
+                           class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-sm sm:text-base shadow-xl transition-all hover:scale-105 active:scale-95"
+                           style="background: #10b981; color: #ffffff; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.5);">
                             <span>Buka Toko Gratis di Campify</span>
                             <i data-lucide="arrow-right" class="w-4 h-4"></i>
                         </a>
-                        <span class="text-xs text-slate-400 text-center sm:text-left">
+                        <span class="text-xs sm:text-sm text-center sm:text-left font-semibold" style="color: #a7f3d0 !important;">
                             ✓ Pendaftaran instan tanpa biaya langganan
                         </span>
                     </div>

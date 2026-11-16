@@ -1,5 +1,6 @@
 @php 
     $routeName = request()->route()?->getName(); 
+    $isTransparent = in_array($routeName, ['home', 'buyer.dashboard', 'landing', 'produk.rental', 'produk.index']);
     $expiredRentals = collect();
     if(auth()->check() && auth()->user()->role === 'buyer') {
         $expiredRentals = \App\Models\Pembeli\OrderDetail_pembeli::whereHas('order', function($q) {
@@ -34,8 +35,11 @@
 @endif
 
 <nav id="mainNavbar" 
-     class="fixed {{ $expiredRentals->count() > 0 ? 'top-[68px] md:top-[40px]' : 'top-0' }} left-0 right-0 z-50 transition-all duration-300 text-white shadow-lg border-b border-white/10" 
-     style="background: rgba(14, 46, 36, 0.45); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);">
+     data-transparent="{{ $isTransparent ? 'true' : 'false' }}"
+     class="fixed {{ $expiredRentals->count() > 0 ? 'top-[68px] md:top-[40px]' : 'top-0' }} left-0 right-0 z-50 transition-all duration-300 text-white bg-transparent" 
+     style="{{ $isTransparent 
+        ? 'background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; border-bottom: 1px solid transparent; box-shadow: none;' 
+        : 'background: rgba(14, 46, 36, 0.95); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 20px rgba(0,0,0,0.15);' }}">
   <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-3">
 
     <!-- TOP BAR -->
@@ -114,11 +118,15 @@
     </div>
 
     <!-- MENU -->
-    <div class="flex gap-6 text-sm font-medium text-white border-t border-white/20 pt-3">
-      <a href="{{ auth()->check() ? route('buyer.dashboard') : route('landing') }}" class="hover:text-forest-300 transition {{ request()->routeIs('home', 'buyer.dashboard', 'landing') ? 'text-emerald-300 font-bold' : '' }}">Home</a>
-      <a href="{{ route('produk.rental') }}" class="hover:text-forest-300 transition {{ request()->routeIs('produk.rental*') ? 'text-emerald-300 font-bold' : '' }}">Sewa</a>
-      <a href="{{ route('produk.index') }}" class="hover:text-forest-300 transition {{ request()->routeIs('produk.index*') ? 'text-emerald-300 font-bold' : '' }}">Beli</a>
-      <a href="{{ route('articles.index') }}" class="hover:text-forest-300 transition {{ request()->routeIs('articles*') ? 'text-emerald-300 font-bold' : '' }}">Artikel</a>
+    <div class="flex items-center gap-6 text-sm font-semibold text-white border-t border-white/20 pt-3">
+      <a href="{{ auth()->check() ? route('buyer.dashboard') : route('landing') }}" 
+         class="transition-all {{ request()->routeIs('home', 'buyer.dashboard', 'landing') ? 'text-white font-extrabold border-b-2 border-emerald-400 pb-1' : 'text-white/80 hover:text-white' }}">Home</a>
+      <a href="{{ route('produk.rental') }}" 
+         class="transition-all {{ request()->routeIs('produk.rental*') ? 'text-white font-extrabold border-b-2 border-emerald-400 pb-1' : 'text-white/80 hover:text-white' }}">Sewa</a>
+      <a href="{{ route('produk.index') }}" 
+         class="transition-all {{ request()->routeIs('produk.index*') ? 'text-white font-extrabold border-b-2 border-emerald-400 pb-1' : 'text-white/80 hover:text-white' }}">Beli</a>
+      <a href="{{ route('articles.index') }}" 
+         class="transition-all {{ request()->routeIs('articles*') ? 'text-white font-extrabold border-b-2 border-emerald-400 pb-1' : 'text-white/80 hover:text-white' }}">Artikel</a>
     </div>
 
   </div>
@@ -142,15 +150,31 @@ document.addEventListener('click', function(event) {
   }
 });
 
-window.addEventListener('scroll', function () {
+function updateNavbarScroll() {
   const navbar = document.getElementById('mainNavbar');
   if (!navbar) return;
-  if (window.scrollY > 20) {
-    navbar.style.background = 'rgba(14, 46, 36, 0.95)';
-    navbar.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.35)';
-  } else {
-    navbar.style.background = 'rgba(14, 46, 36, 0.45)';
-    navbar.style.boxShadow = 'none';
+  const isTransparent = navbar.dataset.transparent === 'true';
+
+  if (isTransparent) {
+    if (window.scrollY > 20) {
+      navbar.style.setProperty('background', 'rgba(14, 46, 36, 0.95)', 'important');
+      navbar.style.setProperty('backdrop-filter', 'blur(14px)', 'important');
+      navbar.style.setProperty('-webkit-backdrop-filter', 'blur(14px)', 'important');
+      navbar.style.setProperty('border-bottom', '1px solid rgba(255, 255, 255, 0.12)', 'important');
+      navbar.style.setProperty('box-shadow', '0 10px 25px -5px rgba(0, 0, 0, 0.35)', 'important');
+      navbar.classList.remove('bg-transparent');
+    } else {
+      navbar.style.setProperty('background', 'transparent', 'important');
+      navbar.style.setProperty('backdrop-filter', 'none', 'important');
+      navbar.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
+      navbar.style.setProperty('border-bottom', '1px solid transparent', 'important');
+      navbar.style.setProperty('box-shadow', 'none', 'important');
+      navbar.classList.add('bg-transparent');
+    }
   }
-});
+}
+
+window.addEventListener('scroll', updateNavbarScroll);
+document.addEventListener('DOMContentLoaded', updateNavbarScroll);
+updateNavbarScroll();
 </script>
